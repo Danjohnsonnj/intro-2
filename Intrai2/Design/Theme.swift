@@ -14,6 +14,24 @@ enum Theme {
         static let navActionGap: CGFloat = 4
         /// Trailing inset for list nav action cluster (mock `.nav-bar` padding-right 8px).
         static let navBarTrailing: CGFloat = 8
+        /// Gap between chat messages (mock `.thread` gap 18px).
+        static let messageGap: CGFloat = 18
+        /// Message bubble padding (mock `.bubble` 12px 16px).
+        static let bubbleVertical: CGFloat = 12
+        static let bubbleHorizontal: CGFloat = 16
+        /// Compose field (mock `.compose-field` / `.compose-input`).
+        static let composeFieldMinHeight: CGFloat = 44
+        static let composeHorizontalInset: CGFloat = 14
+        static let composeTextVerticalPadding: CGFloat = 10
+        static let composeMaxLines: Int = 5
+    }
+
+    enum ChatTypography {
+        static let bodySize: CGFloat = 16
+        /// Mock `.bubble` line-height 1.55.
+        static let bubbleLineSpacing: CGFloat = bodySize * 0.55
+        /// Mock `.compose-input` line-height 1.35.
+        static let composeLineSpacing: CGFloat = bodySize * 0.35
     }
 
     enum Radius {

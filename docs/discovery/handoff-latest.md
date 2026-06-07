@@ -1,6 +1,6 @@
 # Session handoff — Intrai-2
 
-**Updated:** 2026-06-07 (Slice 2 conversation CRUD)
+**Updated:** 2026-06-07 (session end — Slice 3 complete, simulator build verified)
 
 Cold-start agents: read [CONTEXT.md](../../CONTEXT.md), this file, [docs/design-handoff.md](../design-handoff.md), then the approved plan.
 
@@ -8,53 +8,64 @@ Cold-start agents: read [CONTEXT.md](../../CONTEXT.md), this file, [docs/design-
 
 ```
 <handoff>
-GOAL: Slice 3 — ChatViewModel, streaming generation, message persist, compose bar
-ENV: intrai-2 | main uncommitted S2 work | Intrai2.xcodeproj iOS 26.4+ | 23 Swift files
-STATE: S0 scaffold | S1 inference+model | S2 list CRUD + ChatThreadView shell | design components reused
+GOAL: Slice 4 — Stop morph, partial persist, cancel-then-send
+ENV: intrai-2 | main (uncommitted S3) | Intrai2.xcodeproj iOS 26.4+ | 27 Swift files
+STATE: S0–S3 done | chat streams + persists | plain-text bubbles (MarkdownUI = S7)
 PHASE: implementation
 DECISIONS:
-  - HTML mocks canonical for design; handoff.md wins conflicts
-  - nav glyphs: flat bronze, no Liquid Glass (sharedBackgroundVisibility hidden)
-  - Unicode symbols: TextPresentationGlyph U+FE0E for tintable glyphs not emoji
-  - List rows: Button + NavigationPath (no disclosure chevron); rename/export swipes deferred Slice 8
-  - ModelStore: isInferenceReady separate from banner; warm load via warmLoadIfNeeded()
+  - HTML mocks canonical; design-handoff.md wins conflicts
+  - Nav: flat bronze glyphs, no Liquid Glass; instrumentHidesSystemBackButton re-enables edge-swipe pop
+  - Chat: SharedLlamaInference.withSession(unloadOnExit: false); 16ms stream coalesce
+  - ChatPromptBuilder: multi-turn llama_chat_apply_template + default system prompt (Settings prompt = S6)
+  - Send disabled when !modelStore.isModelReady or isGenerating (Stop morph = S4)
 DONE:
-  - Slice 0–1 (see git c5c1dc8 + post-review ModelStore fixes)
-  - Slice 2: + creates Conversation + pushes ChatThreadView; row tap opens chat; trailing Delete (Theme.swipeDelete)
-  - ChatThreadView: flat back, centered title, empty thread shell for Slice 3
+  - Slices 0–2: prior commits (03ff246)
+  - Slice 3: ChatViewModel, ChatGenerationService, ChatPromptBuilder, ChatThreadView thread+compose
+  - formatChatPrompt on LlamaCppBridge; updatedAt bump on append/stream finalize
+  - Flat ⋯ toolbar (menu actions deferred S7/8)
+  - Simulator build: pass (iPhone 17 Pro, 26.4.1)
 TODO:
-  - Slice 3: ChatViewModel, ChatGenerationService stream, compose bar, message persist, bump updatedAt
-  - Slice 3 design: thread layout, compose bar, flat ⋯ nav (defer ⋯ menu items where noted)
-NEXT: implement Slice 3 per plan
+  - Slice 4: Send→Stop morph, abort decode, partial persist, cancel-then-send
+  - Device smoke: first message stream + relaunch restore
+NEXT: implement Slice 4 per plan + chat mock generating frame
 BLOCKED: none
 </handoff>
 ```
 
-## Code map (23 Swift files)
+## Git
+
+| Commit | Contents |
+|--------|----------|
+| `819222d` | Slice 0 scaffold |
+| `c5c1dc8` | Slice 1 inference + design alignment |
+| `03ff246` | Slice 2 CRUD, ChatThreadView shell, ModelStore warm-load |
+
+Branch `main`, 2 commits ahead of `origin/main`. Slice 3 changes uncommitted.
+
+## Code map (27 Swift files)
 
 | Area | Files |
 |------|-------|
 | **App** | `Intrai2App.swift`, `RootView.swift` |
 | **Design** | `Theme.swift`, `InstrumentPanel.swift`, `InstrumentNavChrome.swift`, `TextPresentationGlyph.swift`, `ConversationTimestampFormatter.swift` |
 | **Data** | `Conversation.swift`, `Message.swift` |
-| **Features** | `ConversationListView`, `NoModelBannerView`, `ChatThreadView`, `SettingsView`, `ModelStatusRow` |
-| **Inference** | `LlamaCppBridge`, `LlamaCppRuntime`, `GenerationOptions`, `LlamaInferenceError` |
-| **Services** | `ModelManager`, `ModelStore`, `SharedLlamaInference`, `AsyncLock`, `Notifications+Intrai` |
+| **Features** | `ConversationListView`, `NoModelBannerView`, `ChatThreadView`, `ChatViewModel`, `SettingsView`, `ModelStatusRow` |
+| **Inference** | `LlamaCppBridge`, `LlamaCppRuntime`, `ChatPromptBuilder`, `GenerationOptions`, `LlamaInferenceError` |
+| **Services** | `ChatGenerationService`, `ModelManager`, `ModelStore`, `SharedLlamaInference`, `AsyncLock`, `Notifications+Intrai` |
 
-## Slice 3 scope
+## Slice 4 scope
 
-Per plan + [design-handoff.md](../design-handoff.md):
+Per plan + `chat-ad-idle-generating.html` generating frame:
 
-- `ChatViewModel` + streaming via `SharedLlamaInference`
-- User message append → assistant placeholder → stream → finalize
-- Multiline compose (~5 lines); Send disabled when `!modelStore.isModelReady`
-- Bump `Conversation.updatedAt` on message activity
-- Chat nav: flat back (done), centered title (done), flat **⋯** (Slice 3 design checklist)
+- Send button morphs to Stop (solid bronze + square stop icon)
+- Stop: `cancelGeneration()`, keep partial assistant content, persist
+- New send while generating: cancel in-flight first, then new stream
+- Status copy: "Generating…" (already shown in S3)
 
-## Manual smoke (Slice 2)
+## Resume prompt (next session)
 
-- Tap **+** → new conversation pushes empty chat with title "New conversation"
-- Back (chevron or edge swipe) → list
-- Row tap → opens same chat
-- Trailing swipe **Delete** → row removed
-- Relaunch → conversations persist; sort by `updatedAt` desc
+```
+Resume Intrai-2. Read CONTEXT.md, docs/discovery/handoff-latest.md, docs/design-handoff.md, and ~/.cursor/plans/intrai-2_mvp_plan_ce25251c.plan.md.
+
+Implement Slice 4: Stop morph, partial persist, cancel-then-send per plan and chat mock.
+```

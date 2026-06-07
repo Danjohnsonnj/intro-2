@@ -5,6 +5,7 @@ nonisolated protocol LlamaCppBridge: Sendable {
     func unloadModel()
     func countTemplatedUserPromptTokens(_ user: String) throws -> Int
     func maxTemplatedPromptTokensForGeneration(_ generationMaxTokens: Int) -> Int
+    func formatChatPrompt(messages: [ChatPromptMessage], addGenerationPrompt: Bool) throws -> String
     func startTemplatedUserPrompt(_ user: String, options: GenerationOptions) throws
     func startRawPrompt(_ fullChatPrompt: String, options: GenerationOptions) throws
     func nextTokenChunk() throws -> String?

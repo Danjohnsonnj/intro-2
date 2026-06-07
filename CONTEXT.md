@@ -14,9 +14,11 @@ Private, on-device LLM chat for iPhone. Runs local models via llama.cpp + Metal.
 
 **Slice 2 complete** — conversation list CRUD: `+` create/push, row open, trailing Delete swipe, `ChatThreadView` shell (2026-06-07).
 
+**Slice 3 complete** — `ChatViewModel`, `ChatGenerationService`, `ChatPromptBuilder`, streaming persist, compose bar, flat ⋯ nav (2026-06-07).
+
 **Design alignment** — list + settings surfaces + flat nav chrome (no Liquid Glass on +, gear, back) per canonical HTML mocks (2026-06-06).
 
-**Next session:** Slice 3 — chat send, stream, persist, compose bar. See `docs/discovery/handoff-latest.md`.
+**Next session:** Slice 4 — Stop morph, partial persist, cancel-then-send. See `docs/discovery/handoff-latest.md`.
 
 ## Docs (source of truth)
 

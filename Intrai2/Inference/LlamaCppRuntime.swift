@@ -134,6 +134,41 @@ nonisolated final class LlamaCppRuntime: @unchecked Sendable, LlamaCppBridge {
         return max(1, min(contextLimit - slack, contextLimit - generationBudget - 1))
     }
 
+    func formatChatPrompt(messages: [ChatPromptMessage], addGenerationPrompt: Bool) throws -> String {
+        guard model != nil else { throw LlamaInferenceError.modelNotLoaded }
+        guard !messages.isEmpty else {
+            throw LlamaInferenceError.generationFailed("No messages to format.")
+        }
+
+        guard let mdl = model else { throw LlamaInferenceError.modelNotLoaded }
+        let template: String
+        if let templatePointer = llama_model_chat_template(mdl, nil) {
+            template = String(cString: templatePointer)
+        } else {
+            template = ""
+        }
+
+        if template.isEmpty {
+            return ChatPromptBuilder.fallbackChatML(
+                messages: messages,
+                addGenerationPrompt: addGenerationPrompt
+            )
+        }
+
+        if let formatted = ChatPromptBuilder.applyTemplate(
+            messages: messages,
+            template: template,
+            addGenerationPrompt: addGenerationPrompt
+        ) {
+            return formatted
+        }
+
+        return ChatPromptBuilder.fallbackChatML(
+            messages: messages,
+            addGenerationPrompt: addGenerationPrompt
+        )
+    }
+
     func startTemplatedUserPrompt(_ user: String, options: GenerationOptions) throws {
         guard let mdl = model else { throw LlamaInferenceError.modelNotLoaded }
         let formatted = makeFormattedChatPrompt(userText: user, model: mdl)
@@ -432,6 +467,12 @@ nonisolated final class LlamaCppRuntime: @unchecked Sendable, LlamaCppBridge {
         let slack = 64
         let generationBudget = max(1, generationMaxTokens)
         return max(1, min(contextLimit - slack, contextLimit - generationBudget - 1))
+    }
+
+    func formatChatPrompt(messages: [ChatPromptMessage], addGenerationPrompt: Bool) throws -> String {
+        _ = messages
+        _ = addGenerationPrompt
+        throw LlamaInferenceError.modelNotLoaded
     }
 
     func startTemplatedUserPrompt(_ user: String, options: GenerationOptions) throws {
