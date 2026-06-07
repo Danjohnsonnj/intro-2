@@ -2,7 +2,10 @@ import SwiftUI
 import SwiftData
 
 struct ConversationListView: View {
+    @Binding var navigationPath: NavigationPath
+
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.modelContext) private var modelContext
     @Environment(ModelStore.self) private var modelStore
 
     @Query(sort: \Conversation.updatedAt, order: .reverse)
@@ -32,18 +35,26 @@ struct ConversationListView: View {
                 if conversations.isEmpty {
                     emptyState
                 } else {
-                    List(conversations) { conversation in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(conversation.title)
-                                .font(.listRowTitle)
-                                .foregroundStyle(Theme.textPrimary(colorScheme))
-                                .lineLimit(1)
-                            Text(ConversationTimestampFormatter.string(for: conversation.updatedAt))
-                                .listTimestampStyle(colorScheme)
+                    List {
+                        ForEach(conversations) { conversation in
+                            Button {
+                                navigationPath.append(conversation.id)
+                            } label: {
+                                conversationRow(conversation)
+                            }
+                            .buttonStyle(.plain)
+                            .listRowInsets(listRowInsets)
+                            .listRowBackground(Theme.background(colorScheme))
+                            .listRowSeparatorTint(Theme.border(colorScheme))
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    deleteConversation(conversation)
+                                } label: {
+                                    Text("Delete")
+                                }
+                                .tint(Theme.swipeDelete)
+                            }
                         }
-                        .listRowInsets(listRowInsets)
-                        .listRowBackground(Theme.background(colorScheme))
-                        .listRowSeparatorTint(Theme.border(colorScheme))
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)
@@ -54,9 +65,7 @@ struct ConversationListView: View {
         .instrumentNavigationBar()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                InstrumentListNavActions {
-                    // Slice 2: create conversation and push chat
-                }
+                InstrumentListNavActions(onNewConversation: createConversation)
             }
             .instrumentFlatToolbarItem()
         }
@@ -66,6 +75,28 @@ struct ConversationListView: View {
         .onReceive(NotificationCenter.default.publisher(for: .intraiModelAvailabilityDidChange)) { _ in
             modelStore.refreshFromManager()
         }
+    }
+
+    private func conversationRow(_ conversation: Conversation) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(conversation.title)
+                .font(.listRowTitle)
+                .foregroundStyle(Theme.textPrimary(colorScheme))
+                .lineLimit(1)
+            Text(ConversationTimestampFormatter.string(for: conversation.updatedAt))
+                .listTimestampStyle(colorScheme)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func createConversation() {
+        let conversation = Conversation()
+        modelContext.insert(conversation)
+        navigationPath.append(conversation.id)
+    }
+
+    private func deleteConversation(_ conversation: Conversation) {
+        modelContext.delete(conversation)
     }
 
     private var emptyState: some View {
@@ -84,8 +115,13 @@ struct ConversationListView: View {
 }
 
 #Preview {
-    NavigationStack {
-        ConversationListView()
+    @Previewable @State var navigationPath = NavigationPath()
+
+    NavigationStack(path: $navigationPath) {
+        ConversationListView(navigationPath: $navigationPath)
+            .navigationDestination(for: UUID.self) { conversationID in
+                ChatThreadView(conversationID: conversationID)
+            }
     }
     .modelContainer(for: [Conversation.self, Message.self], inMemory: true)
     .environment(ModelStore())

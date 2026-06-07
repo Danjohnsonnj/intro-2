@@ -24,15 +24,6 @@ actor SharedLlamaInference {
     private var loadedPath: String?
     private var scopedAccess: ModelManager.ScopedAccess?
 
-    /// Load persisted GGUF shortly after launch when still readable.
-    nonisolated static func scheduleWarmFromPersistedSelection() {
-        Task(priority: .utility) {
-            ModelManager.validateSelection()
-            guard ModelManager.hasReadableSelection else { return }
-            try? await SharedLlamaInference.shared.withSession(unloadOnExit: false) { _ in }
-        }
-    }
-
     func withSession<R: Sendable>(
         unloadOnExit: Bool = true,
         _ work: @escaping (InferenceSession) async throws -> R

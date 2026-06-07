@@ -29,10 +29,10 @@ This produces `vendor/llama/llama.xcframework` (iPhone device + arm64 simulator 
 
 | Target | Metal | Inference |
 |--------|-------|-----------|
-| Simulator (arm64) | CPU only (`n_gpu_layers = 0`) | UI + SwiftData; model load in Slice 1+ |
-| Device | Metal (`n_gpu_layers = -1`) | Full on-device generation |
+| Simulator (arm64) | CPU only (`n_gpu_layers = 0`) | UI + SwiftData; stub runtime without xcframework |
+| Device | Metal (`n_gpu_layers = -1`) | Model import, load, and generation (Slice 1+) |
 
-Slice 0 ships navigation and persistence shell only — no model import or chat generation yet.
+**Current MVP slice:** 1 complete (model import/forget, inference foundation, list/settings chrome). Conversation CRUD and chat arrive in Slices 2–3.
 
 ## Project layout
 

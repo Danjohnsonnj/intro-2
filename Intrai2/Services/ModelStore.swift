@@ -7,24 +7,27 @@ import SwiftUI
 final class ModelStore {
     private(set) var selectionState: ModelManager.SelectionDisplayState = .noSelection
     private(set) var isLoadingModel = false
+    private(set) var isInferenceReady = false
     private(set) var lastActionError: String?
 
+    /// No usable model file, or the last runtime load failed.
     var showsNoModelBanner: Bool {
-        !isModelReady
+        switch selectionState {
+        case .noSelection, .missingFile:
+            true
+        case .ready:
+            ModelManager.didLastLoadFail
+        }
     }
 
+    /// Runtime has a loaded model — use for status UI and Slice 3+ send gating.
     var isModelReady: Bool {
-        guard case .ready = selectionState else { return false }
-        return !ModelManager.didLastLoadFail
+        isInferenceReady
     }
 
     var showsForgetModel: Bool {
         if case .ready = selectionState { return true }
         return false
-    }
-
-    var activeModelLabel: String {
-        activeModelDetail
     }
 
     var activeModelDetail: String {
@@ -48,7 +51,7 @@ final class ModelStore {
     }
 
     var statusLabel: String {
-        if isModelReady {
+        if isInferenceReady {
             return "Model loaded"
         }
         if ModelManager.didLastLoadFail {
@@ -60,11 +63,19 @@ final class ModelStore {
     func bootstrap() {
         ModelManager.validateSelection()
         refreshFromManager()
-        SharedLlamaInference.scheduleWarmFromPersistedSelection()
+        Task(priority: .utility) {
+            await warmLoadIfNeeded()
+        }
     }
 
     func refreshFromManager() {
         selectionState = ModelManager.selectionDisplayState()
+        if case .noSelection = selectionState {
+            isInferenceReady = false
+        }
+        if case .missingFile = selectionState {
+            isInferenceReady = false
+        }
     }
 
     func importModel(from url: URL) async {
@@ -76,8 +87,10 @@ final class ModelStore {
             try ModelManager.setSelection(from: url)
             refreshFromManager()
             try await SharedLlamaInference.shared.withSession(unloadOnExit: false) { _ in }
+            isInferenceReady = true
             refreshFromManager()
         } catch {
+            isInferenceReady = false
             lastActionError = error.localizedDescription
             refreshFromManager()
         }
@@ -90,6 +103,7 @@ final class ModelStore {
 
         await SharedLlamaInference.shared.unloadIfLoaded()
         ModelManager.clearSelection()
+        isInferenceReady = false
         refreshFromManager()
     }
 
@@ -98,7 +112,7 @@ final class ModelStore {
             refreshFromManager()
             return
         }
-        guard !isModelReady else { return }
+        guard !isInferenceReady else { return }
 
         lastActionError = nil
         isLoadingModel = true
@@ -106,8 +120,10 @@ final class ModelStore {
 
         do {
             try await SharedLlamaInference.shared.withSession(unloadOnExit: false) { _ in }
+            isInferenceReady = true
             refreshFromManager()
         } catch {
+            isInferenceReady = false
             lastActionError = error.localizedDescription
             refreshFromManager()
         }

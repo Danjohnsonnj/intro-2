@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Flat nav glyphs (canonical mocks — no Liquid Glass)
 
@@ -88,8 +89,74 @@ extension View {
     }
 
     /// Hide system back chevron; use `InstrumentBackButton` in toolbar instead.
+    /// Re-enables edge-swipe pop, which UIKit disables when the system back button is hidden.
     func instrumentHidesSystemBackButton() -> some View {
-        navigationBarBackButtonHidden(true)
+        modifier(InstrumentHidesSystemBackButtonModifier())
+    }
+}
+
+// MARK: - Edge-swipe pop with custom back button
+
+private struct InstrumentHidesSystemBackButtonModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .navigationBarBackButtonHidden(true)
+            .background(InstrumentInteractivePopEnabler())
+    }
+}
+
+/// Restores `interactivePopGestureRecognizer` when the system back button is hidden.
+private struct InstrumentInteractivePopEnabler: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> InstrumentInteractivePopEnablerViewController {
+        InstrumentInteractivePopEnablerViewController()
+    }
+
+    func updateUIViewController(_ uiViewController: InstrumentInteractivePopEnablerViewController, context: Context) {
+        uiViewController.enableInteractivePopIfNeeded()
+    }
+}
+
+private final class InstrumentInteractivePopEnablerViewController: UIViewController {
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        enableInteractivePopIfNeeded()
+    }
+
+    func enableInteractivePopIfNeeded() {
+        guard let navigationController else { return }
+        guard let gesture = navigationController.interactivePopGestureRecognizer else { return }
+        gesture.isEnabled = true
+        if gesture.delegate !== InstrumentInteractivePopGestureDelegate.shared {
+            gesture.delegate = InstrumentInteractivePopGestureDelegate.shared
+        }
+    }
+}
+
+private final class InstrumentInteractivePopGestureDelegate: NSObject, UIGestureRecognizerDelegate {
+    static let shared = InstrumentInteractivePopGestureDelegate()
+
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard let navigationController = gestureRecognizer.view?.nearestNavigationController else {
+            return false
+        }
+        return navigationController.viewControllers.count > 1
+    }
+}
+
+private extension UIView {
+    var nearestNavigationController: UINavigationController? {
+        var responder: UIResponder? = self
+        while let current = responder {
+            if let navigationController = current as? UINavigationController {
+                return navigationController
+            }
+            if let viewController = current as? UIViewController,
+               let navigationController = viewController.navigationController {
+                return navigationController
+            }
+            responder = current.next
+        }
+        return nil
     }
 }
 

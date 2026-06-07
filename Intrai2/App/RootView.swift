@@ -3,10 +3,14 @@ import SwiftUI
 
 struct RootView: View {
     @State private var modelStore = ModelStore()
+    @State private var navigationPath = NavigationPath()
 
     var body: some View {
-        NavigationStack {
-            ConversationListView()
+        NavigationStack(path: $navigationPath) {
+            ConversationListView(navigationPath: $navigationPath)
+                .navigationDestination(for: UUID.self) { conversationID in
+                    ChatThreadView(conversationID: conversationID)
+                }
         }
         .themedScreen()
         .environment(modelStore)
