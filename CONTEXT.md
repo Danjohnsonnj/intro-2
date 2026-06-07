@@ -10,7 +10,11 @@ Private, on-device LLM chat for iPhone. Runs local models via llama.cpp + Metal.
 
 **Slice 0 complete** — git, Xcode scaffold, SwiftData, Theme, NavigationStack, README (2026-06-06).
 
-**Next:** Slice 1 — Phathom inference port, ModelManager bookmarks, Settings model import.
+**Slice 1 complete** — text-only inference port, ModelManager, Settings model import/forget, no-model banner (2026-06-06).
+
+**Design alignment** — list + settings surfaces + flat nav chrome (no Liquid Glass on +, gear, back) per canonical HTML mocks (2026-06-06).
+
+**Next:** Slice 2 — conversation list CRUD (+ create, swipe delete, persistence). Per-slice design deferrals in `docs/design-handoff.md` and `docs/discovery/handoff-latest.md`.
 
 ## Docs (source of truth)
 
@@ -26,7 +30,7 @@ Private, on-device LLM chat for iPhone. Runs local models via llama.cpp + Metal.
 1. Read this file and `docs/discovery/handoff-latest.md`
 2. Read the three briefs for locked decisions
 3. **Implementation:** follow approved MVP plan (9 vertical slices); read plan file first
-4. Mocks: `docs/archive/design-mocks/` (reference only — do not literal-port)
+4. Mocks: `docs/archive/design-mocks/` — **canonical design**; implement in SwiftUI per `docs/design-handoff.md`
 
 ## Relationship to Phathom
 

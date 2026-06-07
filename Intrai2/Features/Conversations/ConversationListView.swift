@@ -3,60 +3,80 @@ import SwiftData
 
 struct ConversationListView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(ModelStore.self) private var modelStore
+
     @Query(sort: \Conversation.updatedAt, order: .reverse)
     private var conversations: [Conversation]
 
+    private var listRowInsets: EdgeInsets {
+        EdgeInsets(
+            top: Theme.Spacing.listRowVertical,
+            leading: Theme.Spacing.listRowHorizontal,
+            bottom: Theme.Spacing.listRowVertical,
+            trailing: Theme.Spacing.listRowHorizontal
+        )
+    }
+
     var body: some View {
-        Group {
-            if conversations.isEmpty {
-                emptyState
-            } else {
-                List(conversations) { conversation in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(conversation.title)
-                            .font(.body.weight(.medium))
-                            .foregroundStyle(Theme.textPrimary(colorScheme))
-                        Text(conversation.updatedAt, style: .relative)
-                            .font(.caption)
-                            .foregroundStyle(Theme.textTertiary(colorScheme))
-                    }
-                    .listRowBackground(Theme.surface(colorScheme))
-                }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
-            }
-        }
-        .navigationTitle("Intrai")
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+        VStack(spacing: 0) {
+            if modelStore.showsNoModelBanner {
                 NavigationLink {
                     SettingsView()
                 } label: {
-                    Image(systemName: "gearshape")
+                    NoModelBannerView()
                 }
-                .accessibilityLabel("Settings")
+                .buttonStyle(.plain)
             }
+
+            Group {
+                if conversations.isEmpty {
+                    emptyState
+                } else {
+                    List(conversations) { conversation in
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(conversation.title)
+                                .font(.listRowTitle)
+                                .foregroundStyle(Theme.textPrimary(colorScheme))
+                                .lineLimit(1)
+                            Text(ConversationTimestampFormatter.string(for: conversation.updatedAt))
+                                .listTimestampStyle(colorScheme)
+                        }
+                        .listRowInsets(listRowInsets)
+                        .listRowBackground(Theme.background(colorScheme))
+                        .listRowSeparatorTint(Theme.border(colorScheme))
+                    }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                }
+            }
+        }
+        .instrumentListNavigationTitle("Conversations")
+        .instrumentNavigationBar()
+        .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
+                InstrumentListNavActions {
                     // Slice 2: create conversation and push chat
-                } label: {
-                    Image(systemName: "plus")
                 }
-                .accessibilityLabel("New conversation")
             }
+            .instrumentFlatToolbarItem()
+        }
+        .onAppear {
+            modelStore.refreshFromManager()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .intraiModelAvailabilityDidChange)) { _ in
+            modelStore.refreshFromManager()
         }
     }
 
     private var emptyState: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             Spacer()
             Text("No conversations")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(Theme.textPrimary(colorScheme))
-            Text("Tap + to start")
-                .font(.subheadline)
+                .font(.emptyStateTitle)
                 .foregroundStyle(Theme.textSecondary(colorScheme))
+            Text("Tap + to start")
+                .font(.emptyStateHint)
+                .foregroundStyle(Theme.textTertiary(colorScheme))
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -68,5 +88,6 @@ struct ConversationListView: View {
         ConversationListView()
     }
     .modelContainer(for: [Conversation.self, Message.self], inMemory: true)
-    .preferredColorScheme(.dark)
+    .environment(ModelStore())
+    .themedScreen()
 }

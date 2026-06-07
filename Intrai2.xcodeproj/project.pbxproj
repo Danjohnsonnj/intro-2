@@ -12,8 +12,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		BB76CC2F9EE2E300839979 /* Intrai2.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Intrai2.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB0000012FA0000000FF0001 /* llama.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = llama.xcframework; path = vendor/llama/llama.xcframework; sourceTree = SOURCE_ROOT; };
+		BB76CC2F9EE2E300839979 /* Intrai2.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Intrai2.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */

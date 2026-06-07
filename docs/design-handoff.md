@@ -68,9 +68,37 @@ Examples: "Generating…", "Model loaded", "Ready" — not "Thinking…" with sp
 
 - Purple-on-gradient AI cliché
 - Mascots / anthropomorphic "assistant" personality in chrome
-- Heavy glassmorphism
+- Heavy glassmorphism / **iOS Liquid Glass** on nav toolbar items (+, gear, back, ⋯)
 - Bubble tails (default no)
 - Sparkle / "thinking" animations
+
+## Navigation chrome (canonical mocks)
+
+HTML probes define **flat bronze glyphs** on an **opaque warm nav bar** — not frosted capsules.
+
+| Control | Treatment | Swift component |
+|---------|-----------|-----------------|
+| List **+** / **gear** | 44×44, `#CDA963` glyph, weight 300, **no fill** | `TextPresentationGlyph` + `InstrumentNavGlyph` + `sharedBackgroundVisibility(.hidden)` |
+| **Back ‹** | Same flat glyph (Settings, Chat) | `InstrumentBackButton` |
+| List title | **Left-aligned** "Conversations" in bar | `instrumentListNavigationTitle` |
+| Settings/Chat title | **Centered** inline title | `navigationTitle` + compact bar |
+| Nav bar surface | Opaque `#121110`, hairline bottom + inset highlight | `instrumentNavigationBar()` |
+
+**Send/Stop** (chat compose) is intentionally **solid bronze fill** — not a flat glyph; still no Liquid Glass (Slice 3–4).
+
+**Unicode symbols as tinted glyphs:** iOS may render characters like ⚙ as color emoji. Use `TextPresentationGlyph.monochrome(_:)` (appends U+FE0E) + `Text(verbatim:)` + `foregroundStyle(token)` — never raw emoji keyboard input or bare `Text("⚙")` for nav icons.
+
+## Slice design checklist (deferred UI)
+
+| Slice | Design items to implement per mocks |
+|-------|-------------------------------------|
+| **2** | Trailing swipe Delete (`#C94A4A`); `+` creates + pushes chat |
+| **3** | Chat nav (flat back, centered title, flat **⋯**); thread layout; compose bar |
+| **4** | Send → Stop morph (solid bronze + square stop icon) |
+| **6** | System prompt editor (`#2A2826`); inference steppers |
+| **7** | MarkdownUI bubbles; code block styling |
+| **8** | Leading Rename/Export swipes; active row bronze bar |
+| **9** | Light mode pass |
 
 ## Markdown in messages
 
@@ -94,7 +122,7 @@ Examples: "Generating…", "Model loaded", "Ready" — not "Thinking…" with sp
 | Leading | `Rename` | Neutral raised | Inline rename; sets `titleLocked` |
 | Leading | `Export` | Accent bronze | Export `.md` → share sheet |
 
-- Toolbar: `+` (creates row + pushes chat immediately), gear
+- Nav title **left-aligned** "Conversations"; toolbar: flat bronze `+` then `⚙` (no Liquid Glass)
 - **No model:** persistent top banner → Settings
 - **Empty:** centered *"No conversations"* / *"Tap + to start"* — no illustration, no wizard
 
@@ -109,7 +137,7 @@ Examples: "Generating…", "Model loaded", "Ready" — not "Thinking…" with sp
 
 ### Settings
 
-- Back chevron (same as chat); edge swipe pop to list
+- Flat bronze **‹** back (same as chat); edge swipe pop to list; no Liquid Glass
 - Model import (GGUF picker) + Forget
 - Global system prompt (multiline editor; token/char hint below)
 - Context length (`n_ctx`), temperature
@@ -147,3 +175,4 @@ Open in Safari: see `docs/archive/design-mocks/README.md`.
 | 2026-06-06 | Nav: back chevron + edge-swipe pop; banner spacing aligned to row inset |
 | 2026-06-06 | Accent updated to shiny bronze `#CDA963` |
 | 2026-06-06 | Discovery signed off — phase complete; mocks canonical |
+| 2026-06-06 | Nav chrome: flat bronze glyphs, opt out of Liquid Glass; slice design checklist |

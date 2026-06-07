@@ -12,7 +12,7 @@ Discovery complete (2026-06-06). MVP plan approved — see `~/.cursor/plans/intr
 
 `docs/product-brief.md` > `docs/technical-brief.md` > `docs/design-handoff.md` > HTML mocks > agent memory
 
-HTML mocks are ephemeral visual reference only (see `design-mock-probe` skill). Never literal-port mock HTML/CSS to SwiftUI.
+HTML mocks in `docs/archive/design-mocks/` are **canonical design** (layout, typography, spacing, copy treatment). Implement in SwiftUI per mocks + `docs/design-handoff.md`; do not literal-port HTML/CSS syntax.
 
 ## Resuming work
 
