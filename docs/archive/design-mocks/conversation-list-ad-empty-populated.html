@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intrai-2 — Conversation List</title>
+  <style>
+    :root {
+      --bg: #121110;
+      --surface: #1C1B19;
+      --surface-raised: #252422;
+      --border: rgba(237, 234, 230, 0.08);
+      --border-strong: rgba(237, 234, 230, 0.14);
+      --surface-highlight: rgba(255, 248, 240, 0.04);
+      --text-primary: #F0EDE8;
+      --text-secondary: #9A9690;
+      --text-tertiary: #6B6762;
+      --accent: #CDA963;
+      --accent-subtle: rgba(205, 169, 99, 0.12);
+      --banner-bg: rgba(180, 140, 60, 0.10);
+      --banner-border: rgba(180, 140, 60, 0.22);
+      --banner-text: #C4A862;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+      background: #0A0A09;
+      color: var(--text-primary);
+      padding: 32px 24px 48px;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page-header {
+      max-width: 1280px;
+      margin: 0 auto 32px;
+    }
+
+    .page-header h1 {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 6px;
+    }
+
+    .page-header p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      max-width: 720px;
+      line-height: 1.5;
+    }
+
+    .copy-spec {
+      max-width: 1280px;
+      margin: 0 auto 40px;
+      padding: 16px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+
+    .copy-spec h2 {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 12px;
+    }
+
+    .copy-spec table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .copy-spec th,
+    .copy-spec td {
+      text-align: left;
+      padding: 8px 12px 8px 0;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .copy-spec th {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+    }
+
+    .copy-spec tr:last-child th,
+    .copy-spec tr:last-child td {
+      border-bottom: none;
+    }
+
+    .copy-spec code {
+      font-family: "SF Mono", ui-monospace, monospace;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .frames {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 32px;
+      justify-content: center;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .frame-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .frame-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+    }
+
+    .device {
+      width: 393px;
+      height: 852px;
+      background: var(--bg);
+      border-radius: 44px;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 28px 88px rgba(0, 0, 0, 0.52);
+      position: relative;
+    }
+
+    .device::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      border-radius: inherit;
+    }
+
+    .status-bar {
+      height: 54px;
+      padding: 14px 28px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      font-size: 15px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .status-icons {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .nav-bar {
+      height: 48px;
+      padding: 0 8px 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border-strong);
+      box-shadow: inset 0 1px 0 var(--surface-highlight);
+    }
+
+    .nav-title {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .icon-btn {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 22px;
+      font-weight: 300;
+      border-radius: var(--radius-sm);
+    }
+
+    .banner {
+      margin: 12px 22px;
+      padding: 14px 16px;
+      background: var(--banner-bg);
+      border: 1px solid var(--banner-border);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .banner-text {
+      font-size: 13px;
+      color: var(--banner-text);
+      line-height: 1.35;
+    }
+
+    .banner-action {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .list-content {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .empty-state {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 32px;
+      text-align: center;
+      gap: 6px;
+    }
+
+    .empty-title {
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      color: var(--text-secondary);
+    }
+
+    .empty-hint {
+      font-size: 15px;
+      color: var(--text-tertiary);
+    }
+
+    .row-list {
+      padding: 4px 0;
+    }
+
+    .row {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+    }
+
+    .row:last-child { border-bottom: none; }
+
+    .row-title {
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .row-time {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .row.active {
+      background: var(--accent-subtle);
+    }
+
+    .row.active::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 10px;
+      bottom: 10px;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .swipe-row {
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .swipe-row:last-child { border-bottom: none; }
+
+    .swipe-actions {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      align-items: stretch;
+    }
+
+    .swipe-actions.trailing {
+      right: 0;
+    }
+
+    .swipe-actions.leading {
+      left: 0;
+    }
+
+    .swipe-action {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 22px;
+      font-size: 15px;
+      font-weight: 500;
+      color: #fff;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .swipe-action.delete {
+      background: #C94A4A;
+    }
+
+    .swipe-action.rename {
+      background: var(--surface-raised);
+      color: var(--text-primary);
+    }
+
+    .swipe-action.export {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .swipe-content {
+      position: relative;
+      background: var(--bg);
+      padding: 14px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 1;
+    }
+
+    /* Offsets match full button label widths (implementation copy spec) */
+    .swipe-content.offset-trailing {
+      transform: translateX(-103px);
+    }
+
+    .swipe-content.offset-leading {
+      transform: translateX(196px);
+    }
+
+    .home-indicator {
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .home-indicator::after {
+      content: "";
+      width: 134px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <h1>Intrai-2 · Conversation List</h1>
+    <p>NavigationStack root. Title + relative timestamp only — no message preview. Mail-style swipe with <strong>full button labels</strong> (see copy spec). Device chrome is mock-only.</p>
+  </header>
+
+  <section class="copy-spec" aria-label="Implementation copy spec">
+    <h2>Swipe action copy (source of truth)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Edge</th>
+          <th>Label</th>
+          <th>Style</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Trailing</td>
+          <td><code>Delete</code></td>
+          <td>Destructive red</td>
+          <td>Remove conversation and messages</td>
+        </tr>
+        <tr>
+          <td>Leading</td>
+          <td><code>Rename</code></td>
+          <td>Neutral raised surface</td>
+          <td>Inline rename; sets <code>titleLocked</code></td>
+        </tr>
+        <tr>
+          <td>Leading</td>
+          <td><code>Export</code></td>
+          <td>Accent bronze</td>
+          <td>Export conversation <code>.md</code> → share sheet</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="frames">
+    <!-- Empty -->
+    <div class="frame-wrap">
+      <span class="frame-label">Empty · model loaded</span>
+      <div class="device">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="status-icons">●●●○ ▮▮▮</span>
+        </div>
+        <div class="nav-bar">
+          <span class="nav-title">Conversations</span>
+          <div class="nav-actions">
+            <span class="icon-btn">+</span>
+            <span class="icon-btn">⚙</span>
+          </div>
+        </div>
+        <div class="list-content">
+          <div class="empty-state">
+            <p class="empty-title">No conversations</p>
+            <p class="empty-hint">Tap + to start</p>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+
+    <!-- Populated -->
+    <div class="frame-wrap">
+      <span class="frame-label">Populated · model loaded</span>
+      <div class="device">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="status-icons">●●●○ ▮▮▮</span>
+        </div>
+        <div class="nav-bar">
+          <span class="nav-title">Conversations</span>
+          <div class="nav-actions">
+            <span class="icon-btn">+</span>
+            <span class="icon-btn">⚙</span>
+          </div>
+        </div>
+        <div class="list-content">
+          <div class="row-list">
+            <div class="row active">
+              <span class="row-title">Swift concurrency patterns</span>
+              <span class="row-time">2 min ago</span>
+            </div>
+            <div class="row">
+              <span class="row-title">Weekend hiking routes</span>
+              <span class="row-time">Yesterday</span>
+            </div>
+            <div class="row">
+              <span class="row-title">New conversation</span>
+              <span class="row-time">Mon</span>
+            </div>
+            <div class="row">
+              <span class="row-title">Llama.cpp context sizing</span>
+              <span class="row-time">May 28</span>
+            </div>
+            <div class="row">
+              <span class="row-title">Recipe scaling ratios</span>
+              <span class="row-time">May 22</span>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+
+    <!-- Swipe trailing · delete -->
+    <div class="frame-wrap">
+      <span class="frame-label">Swipe trailing · delete</span>
+      <div class="device">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="status-icons">●●●○ ▮▮▮</span>
+        </div>
+        <div class="nav-bar">
+          <span class="nav-title">Conversations</span>
+          <div class="nav-actions">
+            <span class="icon-btn">+</span>
+            <span class="icon-btn">⚙</span>
+          </div>
+        </div>
+        <div class="list-content">
+          <div class="row-list">
+            <div class="swipe-row">
+              <div class="swipe-actions trailing">
+                <span class="swipe-action delete">Delete</span>
+              </div>
+              <div class="swipe-content offset-trailing">
+                <span class="row-title">Swift concurrency patterns</span>
+                <span class="row-time">2 min ago</span>
+              </div>
+            </div>
+            <div class="row">
+              <span class="row-title">Weekend hiking routes</span>
+              <span class="row-time">Yesterday</span>
+            </div>
+            <div class="row">
+              <span class="row-title">New conversation</span>
+              <span class="row-time">Mon</span>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+
+    <!-- Swipe leading · rename & export -->
+    <div class="frame-wrap">
+      <span class="frame-label">Swipe leading · Rename · Export</span>
+      <div class="device">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="status-icons">●●●○ ▮▮▮</span>
+        </div>
+        <div class="nav-bar">
+          <span class="nav-title">Conversations</span>
+          <div class="nav-actions">
+            <span class="icon-btn">+</span>
+            <span class="icon-btn">⚙</span>
+          </div>
+        </div>
+        <div class="list-content">
+          <div class="row-list">
+            <div class="swipe-row">
+              <div class="swipe-actions leading">
+                <span class="swipe-action rename">Rename</span>
+                <span class="swipe-action export">Export</span>
+              </div>
+              <div class="swipe-content offset-leading">
+                <span class="row-title">Swift concurrency patterns</span>
+                <span class="row-time">2 min ago</span>
+              </div>
+            </div>
+            <div class="row">
+              <span class="row-title">Weekend hiking routes</span>
+              <span class="row-time">Yesterday</span>
+            </div>
+            <div class="row">
+              <span class="row-title">New conversation</span>
+              <span class="row-time">Mon</span>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+
+    <!-- No model banner -->
+    <div class="frame-wrap">
+      <span class="frame-label">No model · banner</span>
+      <div class="device">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="status-icons">●●●○ ▮▮▮</span>
+        </div>
+        <div class="nav-bar">
+          <span class="nav-title">Conversations</span>
+          <div class="nav-actions">
+            <span class="icon-btn">+</span>
+            <span class="icon-btn">⚙</span>
+          </div>
+        </div>
+        <div class="banner">
+          <span class="banner-text">No model loaded</span>
+          <span class="banner-action">Settings →</span>
+        </div>
+        <div class="list-content">
+          <div class="row-list">
+            <div class="row">
+              <span class="row-title">Swift concurrency patterns</span>
+              <span class="row-time">2 min ago</span>
+            </div>
+            <div class="row">
+              <span class="row-title">Weekend hiking routes</span>
+              <span class="row-time">Yesterday</span>
+            </div>
+            <div class="row">
+              <span class="row-title">New conversation</span>
+              <span class="row-time">Mon</span>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

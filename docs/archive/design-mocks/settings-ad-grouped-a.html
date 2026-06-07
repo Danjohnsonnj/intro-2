@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intrai-2 — Settings</title>
+  <style>
+    :root {
+      --bg: #121110;
+      --surface: #1C1B19;
+      --surface-raised: #252422;
+      --border: rgba(237, 234, 230, 0.08);
+      --border-strong: rgba(237, 234, 230, 0.14);
+      --surface-highlight: rgba(255, 248, 240, 0.04);
+      --text-primary: #F0EDE8;
+      --text-secondary: #9A9690;
+      --text-tertiary: #6B6762;
+      --accent: #CDA963;
+      --accent-subtle: rgba(205, 169, 99, 0.12);
+      --status-ready: #7A9A7E;
+      --destructive: #B85C5C;
+      --code-bg: #2A2826;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+      background: #0A0A09;
+      color: var(--text-primary);
+      padding: 32px 24px 48px;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page-header {
+      max-width: 900px;
+      margin: 0 auto 32px;
+    }
+
+    .page-header h1 {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 6px;
+    }
+
+    .page-header p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .frames {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 32px;
+      justify-content: center;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .frame-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .frame-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+    }
+
+    .device {
+      width: 393px;
+      height: 852px;
+      background: var(--bg);
+      border-radius: 44px;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 28px 88px rgba(0, 0, 0, 0.52);
+      position: relative;
+    }
+
+    .device::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      border-radius: inherit;
+    }
+
+    .status-bar {
+      height: 54px;
+      padding: 14px 28px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      font-size: 15px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .status-icons {
+      font-size: 13px;
+    }
+
+    .nav-bar {
+      height: 48px;
+      padding: 0 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border-strong);
+      box-shadow: inset 0 1px 0 var(--surface-highlight);
+    }
+
+    .nav-bar .back-btn {
+      position: absolute;
+      left: 4px;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 22px;
+      font-weight: 300;
+    }
+
+    .nav-title {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .scroll-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 18px 20px;
+    }
+
+    .section {
+      margin-bottom: 32px;
+    }
+
+    .section-header {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      padding: 0 6px 10px;
+    }
+
+    .group {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: inset 0 1px 0 var(--surface-highlight);
+    }
+
+    .row {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .row:last-child { border-bottom: none; }
+
+    .row-inline {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .row-label {
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      color: var(--text-primary);
+    }
+
+    .row-value {
+      font-size: 16px;
+      color: var(--text-secondary);
+    }
+
+    .row-detail {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      font-family: "SF Mono", ui-monospace, monospace;
+      word-break: break-all;
+      line-height: 1.4;
+    }
+
+    .row-action {
+      font-size: 16px;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .row-destructive {
+      color: var(--destructive);
+      text-align: center;
+      font-weight: 500;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--status-ready);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--status-ready);
+    }
+
+    .prompt-editor {
+      min-height: 120px;
+      padding: 14px 18px;
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text-secondary);
+      background: var(--code-bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hint {
+      padding: 8px 16px 12px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      font-family: "SF Mono", ui-monospace, monospace;
+    }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stepper-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-strong);
+      background: var(--surface-raised);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 300;
+      box-shadow: inset 0 1px 0 var(--surface-highlight);
+    }
+
+    .stepper-value {
+      font-size: 16px;
+      font-variant-numeric: tabular-nums;
+      min-width: 48px;
+      text-align: center;
+      color: var(--text-primary);
+    }
+
+    .home-indicator {
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .home-indicator::after {
+      content: "";
+      width: 134px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <h1>Intrai-2 · Settings</h1>
+    <p>Grouped instrument panel — model, system prompt, inference params, status. Flat surfaces, hairline borders. Status copy is honest metadata, not anthropomorphic.</p>
+  </header>
+
+  <div class="frames">
+    <!-- Model loaded -->
+    <div class="frame-wrap">
+      <span class="frame-label">Model loaded · ready</span>
+      <div class="device">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="status-icons">●●●○ ▮▮▮</span>
+        </div>
+        <div class="nav-bar">
+          <span class="back-btn">‹</span>
+          <span class="nav-title">Settings</span>
+        </div>
+        <div class="scroll-content">
+          <section class="section">
+            <h2 class="section-header">Model</h2>
+            <div class="group">
+              <div class="row">
+                <span class="row-label">Active model</span>
+                <span class="row-detail">Llama-3.2-3B-Instruct-Q4_K_M.gguf</span>
+              </div>
+              <div class="row row-inline">
+                <span class="row-action">Import GGUF…</span>
+              </div>
+              <div class="row row-inline">
+                <span class="status-pill"><span class="status-dot"></span> Model loaded</span>
+              </div>
+              <div class="row">
+                <span class="row-destructive">Forget model</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2 class="section-header">System prompt</h2>
+            <div class="group">
+              <div class="prompt-editor">You are a helpful assistant. Be concise and accurate. Format code with markdown fences.</div>
+              <div class="hint">~42 tokens · 168 characters</div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2 class="section-header">Inference</h2>
+            <div class="group">
+              <div class="row row-inline">
+                <span class="row-label">Context length</span>
+                <div class="stepper">
+                  <span class="stepper-btn">−</span>
+                  <span class="stepper-value">4096</span>
+                  <span class="stepper-btn">+</span>
+                </div>
+              </div>
+              <div class="row row-inline">
+                <span class="row-label">Temperature</span>
+                <div class="stepper">
+                  <span class="stepper-btn">−</span>
+                  <span class="stepper-value">0.7</span>
+                  <span class="stepper-btn">+</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+
+    <!-- No model -->
+    <div class="frame-wrap">
+      <span class="frame-label">No model · idle</span>
+      <div class="device">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="status-icons">●●●○ ▮▮▮</span>
+        </div>
+        <div class="nav-bar">
+          <span class="back-btn">‹</span>
+          <span class="nav-title">Settings</span>
+        </div>
+        <div class="scroll-content">
+          <section class="section">
+            <h2 class="section-header">Model</h2>
+            <div class="group">
+              <div class="row">
+                <span class="row-label">Active model</span>
+                <span class="row-detail" style="color: var(--text-tertiary);">None</span>
+              </div>
+              <div class="row row-inline">
+                <span class="row-action">Import GGUF…</span>
+              </div>
+              <div class="row row-inline">
+                <span class="status-pill" style="color: var(--text-tertiary);">
+                  <span class="status-dot" style="background: var(--text-tertiary);"></span>
+                  Ready
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2 class="section-header">System prompt</h2>
+            <div class="group">
+              <div class="prompt-editor">You are a helpful assistant. Be concise and accurate. Format code with markdown fences.</div>
+              <div class="hint">~42 tokens · 168 characters</div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2 class="section-header">Inference</h2>
+            <div class="group">
+              <div class="row row-inline">
+                <span class="row-label">Context length</span>
+                <div class="stepper">
+                  <span class="stepper-btn">−</span>
+                  <span class="stepper-value">4096</span>
+                  <span class="stepper-btn">+</span>
+                </div>
+              </div>
+              <div class="row row-inline">
+                <span class="row-label">Temperature</span>
+                <div class="stepper">
+                  <span class="stepper-btn">−</span>
+                  <span class="stepper-value">0.7</span>
+                  <span class="stepper-btn">+</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
