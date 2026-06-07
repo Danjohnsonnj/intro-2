@@ -35,14 +35,43 @@ final class ChatViewModel {
     }
 
     var canSend: Bool {
-        !composeText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isGenerating
+        !composeText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     func send(isModelReady: Bool, in conversation: Conversation) {
         let trimmed = composeText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !isGenerating, isModelReady else { return }
+        guard !trimmed.isEmpty, isModelReady else { return }
+
+        if isGenerating {
+            let pending = trimmed
+            composeText = ""
+            Task {
+                await stopAndWaitForCompletion()
+                beginSend(text: pending, in: conversation)
+            }
+            return
+        }
 
         composeText = ""
+        beginSend(text: trimmed, in: conversation)
+    }
+
+    func stopGeneration() {
+        generationTask?.cancel()
+        Task {
+            await SharedLlamaInference.shared.cancelActiveGeneration()
+        }
+    }
+
+    /// Awaits in-flight decode cancellation — used for cancel-then-send and view teardown.
+    func stopAndWaitForCompletion() async {
+        guard let task = generationTask else { return }
+        task.cancel()
+        await SharedLlamaInference.shared.cancelActiveGeneration()
+        await task.value
+    }
+
+    private func beginSend(text: String, in conversation: Conversation) {
         generationError = nil
 
         let now = Date.now
@@ -50,41 +79,39 @@ final class ChatViewModel {
 
         let userMessage = Message(
             role: ChatPromptMessage.roleUser,
-            content: trimmed,
+            content: text,
             createdAt: now,
             orderIndex: nextOrderIndex
         )
-        userMessage.conversation = conversation
-        conversation.messages.append(userMessage)
-        touchConversation(conversation, at: now)
-
         let assistantMessage = Message(
             role: ChatPromptMessage.roleAssistant,
             content: "",
             createdAt: now.addingTimeInterval(0.001),
             orderIndex: nextOrderIndex + 1
         )
+
+        // UI-first: flip generating state and attach in-memory messages before persistence/inference.
+        isGenerating = true
+        streamingMessageID = assistantMessage.id
+        userMessage.conversation = conversation
         assistantMessage.conversation = conversation
+        conversation.messages.append(userMessage)
         conversation.messages.append(assistantMessage)
         touchConversation(conversation, at: now)
-        saveContext()
 
-        streamingMessageID = assistantMessage.id
-        isGenerating = true
-
-        let promptMessages = promptMessages(for: conversation)
         generationTask = Task { [weak self] in
             guard let self else { return }
+            await Task.yield()
+
+            let promptMessages = self.promptMessages(for: conversation)
+            self.saveContext()
+
             await self.runGeneration(
                 promptMessages: promptMessages,
                 assistantMessage: assistantMessage,
                 conversation: conversation
             )
         }
-    }
-
-    func cancelGeneration() {
-        generationTask?.cancel()
     }
 
     private func runGeneration(
@@ -96,6 +123,7 @@ final class ChatViewModel {
             isGenerating = false
             streamingMessageID = nil
             generationTask = nil
+            saveContext()
         }
 
         do {
@@ -103,13 +131,10 @@ final class ChatViewModel {
                 if Task.isCancelled { break }
                 assistantMessage.content += chunk
                 touchConversation(conversation)
-                saveContext()
             }
             touchConversation(conversation)
-            saveContext()
         } catch is CancellationError {
             touchConversation(conversation)
-            saveContext()
         } catch {
             if !Task.isCancelled {
                 generationError = error.localizedDescription
@@ -117,7 +142,6 @@ final class ChatViewModel {
                     assistantMessage.content = error.localizedDescription
                 }
                 touchConversation(conversation)
-                saveContext()
             }
         }
     }

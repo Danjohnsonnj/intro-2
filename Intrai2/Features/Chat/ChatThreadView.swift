@@ -10,7 +10,6 @@ struct ChatThreadView: View {
     @Query private var matches: [Conversation]
 
     @State private var viewModel: ChatViewModel?
-    @FocusState private var composeFocused: Bool
 
     private let bottomScrollAnchorID = "chat-thread-bottom"
 
@@ -56,18 +55,19 @@ struct ChatThreadView: View {
             }
         }
         .onDisappear {
-            viewModel?.cancelGeneration()
+            viewModel?.stopGeneration()
         }
     }
 
     @ViewBuilder
     private func chatContent(conversation: Conversation) -> some View {
         if let viewModel {
-            VStack(spacing: 0) {
-                messageThread(conversation: conversation, viewModel: viewModel)
-                composeBar(conversation: conversation, viewModel: viewModel)
-            }
-            .background(Theme.background(colorScheme))
+            ChatThreadBody(
+                conversation: conversation,
+                viewModel: viewModel,
+                isModelReady: modelStore.isModelReady,
+                bottomScrollAnchorID: bottomScrollAnchorID
+            )
         } else {
             Color.clear
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -75,7 +75,44 @@ struct ChatThreadView: View {
         }
     }
 
-    private func messageThread(conversation: Conversation, viewModel: ChatViewModel) -> some View {
+    private var chatOverflowMenu: some View {
+        Menu {
+            // Rename and Export arrive in Slices 7–8.
+        } label: {
+            InstrumentTintedGlyph(base: "⋯")
+        }
+        .accessibilityLabel("Conversation actions")
+    }
+}
+
+// MARK: - Thread body (dedicated View + @Bindable for reliable compose observation)
+
+private struct ChatThreadBody: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    let conversation: Conversation
+    @Bindable var viewModel: ChatViewModel
+    let isModelReady: Bool
+    let bottomScrollAnchorID: String
+
+    var body: some View {
+        messageThread
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Theme.background(colorScheme))
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                ChatComposeBar(
+                    text: $viewModel.composeText,
+                    isGenerating: viewModel.isGenerating,
+                    isModelReady: isModelReady,
+                    canSend: viewModel.canSend,
+                    onSend: { viewModel.send(isModelReady: isModelReady, in: conversation) },
+                    onStop: { viewModel.stopGeneration() }
+                )
+                .id(viewModel.isGenerating)
+            }
+    }
+
+    private var messageThread: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: Theme.Spacing.messageGap) {
@@ -101,10 +138,13 @@ struct ChatThreadView: View {
             .onChange(of: viewModel.streamingMessageID) { _, _ in
                 scrollToBottom(proxy: proxy)
             }
+            .onChange(of: viewModel.isGenerating) { _, _ in
+                scrollToBottom(proxy: proxy)
+            }
             .onChange(of: conversation.messages.count) { _, _ in
                 scrollToBottom(proxy: proxy)
             }
-            .onChange(of: streamingDraftSignature(in: conversation, viewModel: viewModel)) { _, _ in
+            .onChange(of: streamingDraftSignature) { _, _ in
                 scrollToBottom(proxy: proxy)
             }
             .onAppear {
@@ -113,7 +153,7 @@ struct ChatThreadView: View {
         }
     }
 
-    private func streamingDraftSignature(in conversation: Conversation, viewModel: ChatViewModel) -> String {
+    private var streamingDraftSignature: String {
         guard let streamingID = viewModel.streamingMessageID else { return "" }
         let message = conversation.messages.first { $0.id == streamingID }
         return message?.content ?? ""
@@ -127,72 +167,6 @@ struct ChatThreadView: View {
         } else {
             proxy.scrollTo(bottomScrollAnchorID, anchor: .bottom)
         }
-    }
-
-    private func composeBar(conversation: Conversation, viewModel: ChatViewModel) -> some View {
-        HStack(alignment: .bottom, spacing: 10) {
-            composeField(viewModel: viewModel)
-
-            Button {
-                viewModel.send(isModelReady: modelStore.isModelReady, in: conversation)
-            } label: {
-                ChatSendButtonLabel()
-            }
-            .buttonStyle(.plain)
-            .disabled(!modelStore.isModelReady || !viewModel.canSend)
-            .opacity(modelStore.isModelReady && viewModel.canSend ? 1 : 0.45)
-            .accessibilityLabel("Send")
-        }
-        .padding(.leading, 16)
-        .padding(.trailing, 14)
-        .padding(.vertical, 12)
-        .background(Theme.surface(colorScheme))
-        .overlay(alignment: .top) {
-            Rectangle()
-                .fill(Theme.borderStrong(colorScheme))
-                .frame(height: 1)
-        }
-        .overlay(alignment: .top) {
-            Rectangle()
-                .fill(Theme.surfaceHighlight(colorScheme))
-                .frame(height: 1)
-        }
-    }
-
-    private func composeField(viewModel: ChatViewModel) -> some View {
-        TextField(
-            "Message",
-            text: Binding(
-                get: { viewModel.composeText },
-                set: { viewModel.composeText = $0 }
-            ),
-            axis: .vertical
-        )
-        .focused($composeFocused)
-        .lineLimit(1...Theme.Spacing.composeMaxLines)
-        .font(.system(size: Theme.ChatTypography.bodySize))
-        .lineSpacing(Theme.ChatTypography.composeLineSpacing)
-        .foregroundStyle(Theme.textPrimary(colorScheme))
-        .padding(.horizontal, Theme.Spacing.composeHorizontalInset)
-        .padding(.vertical, Theme.Spacing.composeTextVerticalPadding)
-        .frame(minHeight: Theme.Spacing.composeFieldMinHeight, alignment: .center)
-        .background(Theme.background(colorScheme))
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous)
-                .strokeBorder(Theme.border(colorScheme), lineWidth: 1)
-        }
-        .disabled(viewModel.isGenerating)
-        .opacity(viewModel.isGenerating ? 0.4 : 1)
-    }
-
-    private var chatOverflowMenu: some View {
-        Menu {
-            // Rename and Export arrive in Slices 7–8.
-        } label: {
-            InstrumentTintedGlyph(base: "⋯")
-        }
-        .accessibilityLabel("Conversation actions")
     }
 }
 
@@ -275,24 +249,6 @@ private struct ChatMessageRow: View {
                 style: .continuous
             )
         }
-    }
-}
-
-// MARK: - Send button
-
-private struct ChatSendButtonLabel: View {
-    var body: some View {
-        Text("↑")
-            .font(.system(size: 16, weight: .bold))
-            .foregroundStyle(Theme.background(.dark))
-            .frame(minWidth: 44, minHeight: 44)
-            .background(Theme.accent)
-            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous)
-                    .strokeBorder(Color(hex: "#FFE4B4").opacity(0.35), lineWidth: 1)
-                    .blendMode(.overlay)
-            }
     }
 }
 

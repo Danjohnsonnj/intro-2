@@ -198,30 +198,55 @@ nonisolated final class LlamaCppRuntime: @unchecked Sendable, LlamaCppBridge {
 
         let vocab = llama_model_get_vocab(mdl)
 
-        let batch: llama_batch
-        if nPos == 0 {
-            batch = llama_batch_get_one(promptBuffer, Int32(nPrompt))
+        if nPos < nPrompt {
+            let remaining = nPrompt - nPos
+            let chunkSize = min(Int(config.physicalBatchSize), remaining)
+            let batch = llama_batch_get_one(promptBuffer.advanced(by: nPos), Int32(chunkSize))
+
+            if nPos + chunkSize >= nPrompt + nPredict {
+                releaseGenerationState(freeContext: false)
+                return nil
+            }
+
+            let decodeResult = llama_decode(ctx, batch)
+            if decodeResult < 0 {
+                releaseGenerationState(freeContext: false)
+                throw LlamaInferenceError.generationFailed("Inference error during decode (code \(decodeResult)).")
+            }
+            if decodeResult == 1 {
+                releaseGenerationState(freeContext: false)
+                throw LlamaInferenceError.contextLimitReached("Context full — try shorter content.")
+            }
+            nPos += chunkSize
+
+            if shouldCancel {
+                releaseGenerationState(freeContext: false)
+                return nil
+            }
+
+            if nPos < nPrompt {
+                return ""
+            }
         } else {
             singleTokenBuffer.pointee = lastSampledToken
-            batch = llama_batch_get_one(singleTokenBuffer, 1)
-        }
+            let batch = llama_batch_get_one(singleTokenBuffer, 1)
 
-        let batchLength = Int(batch.n_tokens)
-        if nPos + batchLength >= nPrompt + nPredict {
-            releaseGenerationState(freeContext: false)
-            return nil
-        }
+            if nPos + 1 >= nPrompt + nPredict {
+                releaseGenerationState(freeContext: false)
+                return nil
+            }
 
-        let decodeResult = llama_decode(ctx, batch)
-        if decodeResult < 0 {
-            releaseGenerationState(freeContext: false)
-            throw LlamaInferenceError.generationFailed("Inference error during decode (code \(decodeResult)).")
+            let decodeResult = llama_decode(ctx, batch)
+            if decodeResult < 0 {
+                releaseGenerationState(freeContext: false)
+                throw LlamaInferenceError.generationFailed("Inference error during decode (code \(decodeResult)).")
+            }
+            if decodeResult == 1 {
+                releaseGenerationState(freeContext: false)
+                throw LlamaInferenceError.contextLimitReached("Context full — try shorter content.")
+            }
+            nPos += 1
         }
-        if decodeResult == 1 {
-            releaseGenerationState(freeContext: false)
-            throw LlamaInferenceError.contextLimitReached("Context full — try shorter content.")
-        }
-        nPos += batchLength
 
         let newToken = llama_sampler_sample(smpl, ctx, -1)
         if llama_vocab_is_eog(vocab, newToken) {

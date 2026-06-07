@@ -29,6 +29,10 @@ struct ChatGenerationService: Sendable {
                             guard let chunk = try session.bridge.nextTokenChunk() else {
                                 break
                             }
+                            if Task.isCancelled {
+                                session.bridge.cancelGeneration()
+                                break
+                            }
                             if chunk.isEmpty { continue }
 
                             pending += chunk
@@ -52,6 +56,9 @@ struct ChatGenerationService: Sendable {
 
             continuation.onTermination = { _ in
                 task.cancel()
+                Task {
+                    await SharedLlamaInference.shared.cancelActiveGeneration()
+                }
             }
         }
     }

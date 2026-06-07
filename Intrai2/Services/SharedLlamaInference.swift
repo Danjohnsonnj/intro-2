@@ -48,6 +48,11 @@ actor SharedLlamaInference {
         await lifecycleLock.release()
     }
 
+    /// Interrupt an in-flight decode immediately (abort callback + shouldCancel flag).
+    func cancelActiveGeneration() {
+        runtime.cancelGeneration()
+    }
+
     private func ensureLoadedLocked() async throws {
         guard let access = ModelManager.openSelection() else {
             ModelManager.setLastLoadFailed(true)
