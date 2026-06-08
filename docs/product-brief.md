@@ -137,3 +137,4 @@ Long conversations exceed model context. v1: oldest turns dropped automatically 
 | 2026-06-08 | Slice 8 shipped — auto title after first exchange; rename (nav inline, ⋯ sheet, list swipe sheet); list leading Export/Rename swipes; active-row bronze accent |
 | 2026-06-08 | Slice 9 / MVP complete — system light mode, smoke checklist, device acceptance gate |
 | 2026-06-08 | MVP signed off — all 8 user stories smoke-validated (device + simulator) |
+| 2026-06-08 | Post-MVP direction — Slice 10 = A1 UI settle before inference (Tier A polish first) |

@@ -1,6 +1,6 @@
 # Technical brief — Intrai-2
 
-**Status:** MVP signed off — Slices 0–9 shipped; smoke passed 2026-06-08 ([mvp-smoke-checklist.md](mvp-smoke-checklist.md)).  
+**Status:** MVP signed off — Slices 0–9 shipped; smoke passed 2026-06-08 ([mvp-smoke-checklist.md](mvp-smoke-checklist.md)). Slice 10 (A1) planned.  
 **Last updated:** 2026-06-08
 
 ## Stack (locked)
@@ -89,14 +89,28 @@ ChatViewModel
 - Partial assistant message persisted on stop
 - `ScrollViewReader` scroll-to-bottom on draft text change
 
-### Post-MVP chat UX polish (deferred — after Slice 9)
+### Post-MVP chat UX polish
 
-| Item | Intent |
-|------|--------|
-| **UI state before inference** | UI must fully settle **before** inference begins, in order: (1) keyboard dismisses, (2) message input clears, (3) send button state changes (→ Stop), (4) input row anchors to bottom of view, (5) blank assistant bubble appears with "Generating…" below it, (6) chat scrolls completely to bottom — **then** start inference. |
-| **Responsiveness during generation** | Keep the app fluid while inference runs on device (scroll, keyboard, navigation, stop feel, etc.). Details TBD at implementation. |
-| **Immediate stop interrupt** | Stop often only takes effect after ≥1 token streamed; investigate decode blocking and abort-callback latency beyond chunked prefill. |
-| **Proactive trim / summarization** | v1 `SlidingWindowTrimmer` is reactive (trim only when budget exceeded). Later turns slow as full history is rebuilt and prefill grows. Consider proactive trimming or `SummarizingTrimmer` (v1.1+) to cap prefill cost before budget pressure. Device UAT (2026-06-07): trim notice not yet observed in normal use; latency growth noticeable on longer threads. |
+| Item | Phase | Status |
+|------|-------|--------|
+| **UI state before inference (A1)** | Slice 10 | **Planned** — spec below |
+| **Responsiveness during generation (A3)** | Post–Slice 10 | Deferred |
+| **Immediate stop interrupt (A2)** | Post–Slice 10 | Deferred |
+| **Proactive trim / summarization** | v1.1+ | Deferred — device UAT (2026-06-07): trim notice rare; latency grows on long threads |
+
+#### Slice 10 A1 — UI settle before inference (locked, not yet shipped)
+
+**UX sequence on Send:** (1) keyboard dismisses, (2) compose clears, (3) Send → Stop, (4) compose row anchors bottom, (5) empty assistant bubble + "Generating…", (6) scroll to bottom — **then** inference.
+
+**Architecture:** Two-phase send. `prepareSend` (ViewModel: in-memory messages, `isGenerating`, no persist) → View settle (resign focus, scroll, 200ms post-scroll + 300ms cap) → `startPreparedInference` (persist + stream). Cancel-then-send uses the same path after `stopAndWaitForCompletion`.
+
+**Rollback (settle window):** Stop or navigate back before infer → remove user + assistant placeholders, restore sent text to compose, revert `updatedAt`; Stop also re-focuses compose. `stopGeneration()` is active-inference only; settling cancel is view-driven via `cancelPreparedSend`.
+
+**Persist:** No `saveContext` until `startPreparedInference`. Skip `migrateLegacyOrderIndicesIfNeeded` save while `isSettling` (render path would otherwise bypass defer).
+
+**Orchestration:** `ChatThreadBody` owns focus, `settleTask`, `activeSettleSendID`, and `onDisappear`. Plan: `~/.cursor/plans/slice_10_a1_settle_b79a4cd1.plan.md`.
+
+**Acceptance:** `docs/post-mvp-smoke-checklist.md` (create at slice delivery). MVP checklist stays frozen.
 
 ## Multi-turn context (locked)
 
@@ -218,3 +232,4 @@ Personal / sideload / dev install. Follow iOS sandbox rules for file access.
 | 2026-06-08 | Slice 8 — `TitleGenerationService`, rename UX, list swipes, `activeConversationID` active row |
 | 2026-06-08 | Slice 9 — light mode (removed forced dark), smoke checklist, README, MVP docs checkpoint |
 | 2026-06-08 | MVP signed off — smoke checklist passed (device + simulator) |
+| 2026-06-08 | Slice 10 A1 — grill-me locked; implementation plan reviewed (`slice_10_a1_settle_b79a4cd1.plan.md`) |

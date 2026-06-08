@@ -22,10 +22,11 @@ Private, on-device LLM chat for iPhone. Runs local models via llama.cpp + Metal.
 | 7 | MarkdownUI bubbles, copy message, export `.md` |
 | 8 | Auto title, rename paths, list swipes, active row |
 | 9 | Light mode, smoke checklist, MVP docs checkpoint |
+| 10 | **Planned** — A1 UI settle before inference (see plan below) |
 
 **Design alignment** — list + settings + chat per canonical HTML mocks; flat nav chrome; system light + dark supported.
 
-**Post-MVP:** Planning next — see [docs/technical-brief.md](docs/technical-brief.md) § Post-MVP chat UX polish and [docs/discovery/handoff-latest.md](docs/discovery/handoff-latest.md).
+**Post-MVP:** Slice 10 (A1) planned and reviewed — plan: `~/.cursor/plans/slice_10_a1_settle_b79a4cd1.plan.md`. Spec: [docs/technical-brief.md](docs/technical-brief.md) § Slice 10 A1. Handoff: [docs/discovery/handoff-latest.md](docs/discovery/handoff-latest.md).
 
 ## Docs (source of truth)
 
@@ -41,7 +42,7 @@ Private, on-device LLM chat for iPhone. Runs local models via llama.cpp + Metal.
 
 1. Read this file and `docs/discovery/handoff-latest.md`
 2. Read the three briefs for locked decisions
-3. **Implementation:** MVP shipped — use smoke checklist for validation; post-MVP work follows briefs
+3. **Implementation:** MVP shipped; next slice is 10 (A1 settle) per plan + technical brief
 4. Mocks: `docs/archive/design-mocks/` — **canonical design**; implement in SwiftUI per `docs/design-handoff.md`
 
 ## Relationship to Phathom
