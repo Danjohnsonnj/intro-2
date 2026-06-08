@@ -10,6 +10,7 @@ struct ChatThreadView: View {
     @Query private var matches: [Conversation]
 
     @State private var viewModel: ChatViewModel?
+    @State private var exportShareItem: ExportShareItem?
 
     private let bottomScrollAnchorID = "chat-thread-bottom"
 
@@ -45,9 +46,13 @@ struct ChatThreadView: View {
             .instrumentFlatToolbarItem()
 
             ToolbarItem(placement: .topBarTrailing) {
-                chatOverflowMenu
+                chatOverflowMenu(conversation: conversation)
             }
             .instrumentFlatToolbarItem()
+        }
+        .sheet(item: $exportShareItem) { item in
+            ConversationShareSheet(items: [item.url])
+                .presentationDetents([.medium, .large])
         }
         .onAppear {
             if viewModel == nil {
@@ -75,14 +80,37 @@ struct ChatThreadView: View {
         }
     }
 
-    private var chatOverflowMenu: some View {
+    @ViewBuilder
+    private func chatOverflowMenu(conversation: Conversation?) -> some View {
         Menu {
-            // Rename and Export arrive in Slices 7–8.
+            if let conversation {
+                Button {
+                    exportConversation(conversation)
+                } label: {
+                    Label("Export", systemImage: "square.and.arrow.up")
+                }
+                .disabled(conversation.messages.isEmpty)
+            }
+            // Rename arrives in Slice 8.
         } label: {
             InstrumentTintedGlyph(base: "⋯")
         }
         .accessibilityLabel("Conversation actions")
     }
+
+    private func exportConversation(_ conversation: Conversation) {
+        do {
+            let url = try ExportFormatter.writeTemporaryMarkdownFile(for: conversation)
+            exportShareItem = ExportShareItem(url: url)
+        } catch {
+            // Export is best-effort; share sheet simply won't open on failure.
+        }
+    }
+}
+
+private struct ExportShareItem: Identifiable {
+    let id = UUID()
+    let url: URL
 }
 
 // MARK: - Thread body (dedicated View + @Bindable for reliable compose observation)
@@ -254,27 +282,27 @@ private struct ChatMessageRow: View {
     }
 
     private var messageBubble: some View {
-        let displayText = bubbleText
-        return Text(displayText)
-            .font(.system(size: Theme.ChatTypography.bodySize))
-            .lineSpacing(Theme.ChatTypography.bubbleLineSpacing)
-            .foregroundStyle(Theme.textPrimary(colorScheme))
-            .multilineTextAlignment(isUser ? .trailing : .leading)
-            .frame(maxWidth: isUser ? 320 : .infinity, alignment: isUser ? .trailing : .leading)
-            .padding(.horizontal, Theme.Spacing.bubbleHorizontal)
-            .padding(.vertical, Theme.Spacing.bubbleVertical)
-            .background(bubbleBackground)
-            .clipShape(bubbleShape)
-            .overlay {
-                bubbleShape.strokeBorder(bubbleBorder, lineWidth: 1)
-            }
-    }
-
-    private var bubbleText: String {
-        if message.content.isEmpty, isStreaming {
-            return " "
+        ChatMessageMarkdown(
+            content: message.content,
+            isStreaming: isStreaming,
+            textAlignment: isUser ? .trailing : .leading
+        )
+        .frame(maxWidth: isUser ? 320 : .infinity, alignment: isUser ? .trailing : .leading)
+        .padding(.horizontal, Theme.Spacing.bubbleHorizontal)
+        .padding(.vertical, Theme.Spacing.bubbleVertical)
+        .background(bubbleBackground)
+        .clipShape(bubbleShape)
+        .overlay {
+            bubbleShape.strokeBorder(bubbleBorder, lineWidth: 1)
         }
-        return message.content
+        .contextMenu {
+            Button {
+                UIPasteboard.general.string = message.content
+            } label: {
+                Label("Copy markdown", systemImage: "doc.on.doc")
+            }
+            .disabled(message.content.isEmpty)
+        }
     }
 
     private var bubbleBackground: some ShapeStyle {

@@ -1,6 +1,6 @@
 # Session handoff — Intrai-2
 
-**Updated:** 2026-06-08 (Slice 6 — creativity slider)
+**Updated:** 2026-06-08 (session end — Slice 7 complete, pending user commit)
 
 Cold-start agents: read [CONTEXT.md](../../CONTEXT.md), this file, [docs/technical-brief.md](../technical-brief.md), then the approved plan.
 
@@ -8,38 +8,52 @@ Cold-start agents: read [CONTEXT.md](../../CONTEXT.md), this file, [docs/technic
 
 ```
 <handoff>
-GOAL: Implement Slice 7 (MarkdownUI rendering, copy message, export conversation .md)
-ENV: intrai-2 | main (uncommitted S6) | Intrai2.xcodeproj iOS 26.4+ | 32 Swift files
-STATE: S0–S6 implemented | simulator build clean
-PHASE: implementation — Slice 7
+GOAL: Implement Slice 8 (auto title, rename UX, list leading swipes)
+ENV: intrai-2 | main (S7 uncommitted — user committing before next session) | Intrai2.xcodeproj iOS 26.4+ | 37 Swift files
+STATE: S0–S7 done | UAT: export ✓, markdown render ✓, heading hierarchy fixed ✓
+PHASE: implementation — Slice 8
 DECISIONS:
-  - SettingsStore: system prompt, n_ctx (2048/4096/8192), creativity 0.1–1.5 (default 0.7, step 0.1)
-  - UI label **Creativity** (sampler temperature under the hood); Focused / Varied endpoint copy
-  - n_ctx change reloads inference; creativity + system prompt persist only (next send)
-  - Model status row only — no duplicate inference-ready row in Inference section
-DONE (Slice 6):
-  - SettingsStore + InferenceSettingsStore + InstrumentStepperRow + InstrumentCreativitySliderRow
-  - Settings UI per canonical mock: prompt editor, context stepper, creativity slider
-  - ChatViewModel → SettingsStore at generation time
-NEXT: Slice 7
+  - MarkdownUI on all message bubbles; 16ms coalesced re-parse during stream
+  - ChatMarkdownTheme must define heading1–heading6 (else all headers = body size); relative .em sizes on 16pt base
+  - Code blocks: SF Mono 13px, #2A2826 background, border per mock
+  - Copy markdown: per-message context menu → UIPasteboard
+  - Export: chat ⋯ → ExportFormatter → temp .md → share sheet
+  - Export format: `# title`, `## User` / `## Assistant`, raw markdown body
+DONE (Slice 7):
+  - ChatMessageMarkdown + ChatMarkdownTheme (incl. heading1–6)
+  - ExportFormatter.swift + ConversationShareSheet
+  - ChatThreadView: markdown bubbles, context menu copy, ⋯ Export
+TODO (Slice 8):
+  - TitleGenerationService after first complete exchange
+  - Rename: nav title tap, chat ⋯, list leading swipe (sets titleLocked)
+  - List leading Export swipe (reuse ExportFormatter)
+  - Active row bronze accent bar
+NEXT: Slice 8
 BLOCKED: none
 </handoff>
 ```
 
 ## Git
 
-Branch `main` — ahead of `origin/main` by 5 commits (Slice 6 uncommitted).
+| Commit | Contents |
+|--------|----------|
+| `207bd03` | Slice 6 (last committed) |
+| _(pending)_ | Slice 7 — user committing this session |
 
-## Slice 7 scope (from plan)
+**Uncommitted files:** `ExportFormatter.swift`, `ChatMessageMarkdown.swift`, `ChatMarkdownTheme.swift`, `ConversationShareSheet.swift`, `ChatThreadView.swift`, `CONTEXT.md`, `AGENTS.md`, `handoff-latest.md`
+
+Branch `main` — ahead of `origin/main` by 6 commits (+ Slice 7 pending).
+
+## Slice 8 scope (from plan)
 
 | Deliverable | Notes |
 |-------------|-------|
-| MarkdownUI | Message bubbles; live re-parse during stream |
-| Code blocks | SF Mono + `#2A2826` background |
-| Copy message | Per-message context menu |
-| Export | Chat ⋯ menu → `.md` share sheet via `ExportFormatter` |
+| Auto title | After first user+assistant exchange; first user message ~500 char cap |
+| Rename | Nav title, chat ⋯, list leading swipe — all set `titleLocked` |
+| List swipes | Leading Rename + Export; trailing Delete already done |
+| Active row | Bronze accent bar on open conversation |
 
-**Touch points:** `ChatThreadView`, message bubble views, new `ExportFormatter.swift`, SPM MarkdownUI already linked.
+**Touch points:** `ConversationListView`, `ChatThreadView`, new `TitleGenerationService.swift`
 
 ## Post-MVP follow-up (after Slice 9)
 
@@ -55,5 +69,5 @@ See [technical-brief.md](../technical-brief.md) § Post-MVP chat UX polish.
 ```
 Resume Intrai-2. Read CONTEXT.md, docs/discovery/handoff-latest.md, and ~/.cursor/plans/intrai-2_mvp_plan_ce25251c.plan.md.
 
-Implement Slice 7 (Markdown render, copy message, export conversation).
+Implement Slice 8 (auto title, rename paths, list swipes).
 ```

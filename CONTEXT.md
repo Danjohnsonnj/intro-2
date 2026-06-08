@@ -22,9 +22,11 @@ Private, on-device LLM chat for iPhone. Runs local models via llama.cpp + Metal.
 
 **Slice 6 complete** — `SettingsStore`, system prompt / `n_ctx` / creativity slider (0.1–1.5), reload on `n_ctx` change, wired into chat (2026-06-08).
 
+**Slice 7 complete** — MarkdownUI bubbles (coalesced stream re-parse), code block styling, per-message Copy markdown, chat ⋯ Export → `.md` share sheet (2026-06-08).
+
 **Design alignment** — list + settings surfaces + flat nav chrome (no Liquid Glass on +, gear, back) per canonical HTML mocks (2026-06-06).
 
-**Next session:** Implement Slice 7 (MarkdownUI rendering, copy message, export conversation .md). See `docs/discovery/handoff-latest.md`.
+**Next session:** Implement Slice 8 (auto title, rename paths, list swipes). See `docs/discovery/handoff-latest.md`.
 
 ## Docs (source of truth)
 
