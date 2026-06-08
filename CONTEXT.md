@@ -8,27 +8,24 @@ Private, on-device LLM chat for iPhone. Runs local models via llama.cpp + Metal.
 
 **MVP plan approved** — reviewed 2026-06-06. Plan: `~/.cursor/plans/intrai-2_mvp_plan_ce25251c.plan.md`
 
-**Slice 0 complete** — git, Xcode scaffold, SwiftData, Theme, NavigationStack, README (2026-06-06).
+**MVP signed off** — all 9 vertical slices shipped and smoke-validated (2026-06-08). Checklist: [docs/mvp-smoke-checklist.md](docs/mvp-smoke-checklist.md) (passed).
 
-**Slice 1 complete** — text-only inference port, ModelManager, Settings model import/forget, no-model banner (2026-06-06).
+| Slice | Summary |
+|-------|---------|
+| 0 | Git, Xcode scaffold, SwiftData, Theme, NavigationStack |
+| 1 | Text-only inference, ModelManager, Settings model import/forget |
+| 2 | Conversation list CRUD, trailing Delete swipe |
+| 3 | ChatViewModel, streaming generation, compose bar |
+| 4 | Stop morph, cancel-then-send, partial persist |
+| 5 | SlidingWindowTrimmer, trim notice, decode recovery |
+| 6 | Settings: system prompt, `n_ctx`, creativity slider |
+| 7 | MarkdownUI bubbles, copy message, export `.md` |
+| 8 | Auto title, rename paths, list swipes, active row |
+| 9 | Light mode, smoke checklist, MVP docs checkpoint |
 
-**Slice 2 complete** — conversation list CRUD: `+` create/push, row open, trailing Delete swipe, `ChatThreadView` shell (2026-06-07).
+**Design alignment** — list + settings + chat per canonical HTML mocks; flat nav chrome; system light + dark supported.
 
-**Slice 3 complete** — `ChatViewModel`, `ChatGenerationService`, `ChatPromptBuilder`, streaming persist, compose bar, flat ⋯ nav (2026-06-07).
-
-**Slice 4 complete** — stop morph (■), cancel-then-send, chunked prefill cancel, `ChatComposeBar` + `ChatThreadBody` (2026-06-07).
-
-**Slice 5 complete** — `ChatService`, `SlidingWindowTrimmer`, `NoOpContextAugmentation`, trim notice, decode -3 recovery (2026-06-07).
-
-**Slice 6 complete** — `SettingsStore`, system prompt / `n_ctx` / creativity slider (0.1–1.5), reload on `n_ctx` change, wired into chat (2026-06-08).
-
-**Slice 7 complete** — MarkdownUI bubbles (coalesced stream re-parse), code block styling, per-message Copy markdown, chat ⋯ Export → `.md` share sheet (2026-06-08).
-
-**Slice 8 complete** — auto title after first exchange, rename (nav tap / ⋯ / list swipe, sets `titleLocked`), list leading Export/Rename swipes, active-row bronze accent (2026-06-08).
-
-**Design alignment** — list + settings surfaces + flat nav chrome (no Liquid Glass on +, gear, back) per canonical HTML mocks (2026-06-06).
-
-**Next:** Slice 9 — device smoke pass, light mode check, MVP acceptance gate. Slice 8 pending user commit. See `docs/discovery/handoff-latest.md`.
+**Post-MVP:** Planning next — see [docs/technical-brief.md](docs/technical-brief.md) § Post-MVP chat UX polish and [docs/discovery/handoff-latest.md](docs/discovery/handoff-latest.md).
 
 ## Docs (source of truth)
 
@@ -37,13 +34,14 @@ Private, on-device LLM chat for iPhone. Runs local models via llama.cpp + Metal.
 | [docs/product-brief.md](docs/product-brief.md) | Requirements, user stories, MVP scope |
 | [docs/technical-brief.md](docs/technical-brief.md) | Architecture, llama.cpp, persistence, extensibility |
 | [docs/design-handoff.md](docs/design-handoff.md) | Visual language, components, mock workflow |
+| [docs/mvp-smoke-checklist.md](docs/mvp-smoke-checklist.md) | Device acceptance checklist |
 | [docs/discovery/handoff-latest.md](docs/discovery/handoff-latest.md) | Latest session handoff for cold-start agents |
 
 ## Session bootstrap
 
 1. Read this file and `docs/discovery/handoff-latest.md`
 2. Read the three briefs for locked decisions
-3. **Implementation:** follow approved MVP plan (9 vertical slices); read plan file first
+3. **Implementation:** MVP shipped — use smoke checklist for validation; post-MVP work follows briefs
 4. Mocks: `docs/archive/design-mocks/` — **canonical design**; implement in SwiftUI per `docs/design-handoff.md`
 
 ## Relationship to Phathom

@@ -1,6 +1,6 @@
 # Technical brief — Intrai-2
 
-**Status:** Discovery complete (signed off 2026-06-06). MVP implementation Slices 0–8 shipped (2026-06-08).  
+**Status:** MVP signed off — Slices 0–9 shipped; smoke passed 2026-06-08 ([mvp-smoke-checklist.md](mvp-smoke-checklist.md)).  
 **Last updated:** 2026-06-08
 
 ## Stack (locked)
@@ -59,6 +59,17 @@
 - `n_batch >=` max prompt length (SIGABRT if too small)
 - Reject encoder-decoder GGUFs explicitly
 - Real perf validation on device only (simulator Metal unreliable)
+
+### Simulator limitations (Slice 9)
+
+| Capability | Simulator | Device |
+|------------|-----------|--------|
+| UI / SwiftData / export / copy | Yes | Yes |
+| Light + dark appearance | Yes | Yes |
+| Metal inference | CPU only; not perf-representative | Full path |
+| MVP smoke inference stories | Partial | Required for acceptance |
+
+See [docs/mvp-smoke-checklist.md](mvp-smoke-checklist.md).
 
 ### Layer stack
 
@@ -205,3 +216,5 @@ Personal / sideload / dev install. Follow iOS sandbox rules for file access.
 | 2026-06-08 | Slice 6 — `SettingsStore`, creativity slider, `n_ctx` reload on save |
 | 2026-06-08 | Slice 7 — MarkdownUI bubbles, export/copy |
 | 2026-06-08 | Slice 8 — `TitleGenerationService`, rename UX, list swipes, `activeConversationID` active row |
+| 2026-06-08 | Slice 9 — light mode (removed forced dark), smoke checklist, README, MVP docs checkpoint |
+| 2026-06-08 | MVP signed off — smoke checklist passed (device + simulator) |

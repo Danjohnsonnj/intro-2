@@ -135,3 +135,5 @@ Long conversations exceed model context. v1: oldest turns dropped automatically 
 | 2026-06-06 | Checkpoint 2 — Q10–Q20: persistence, settings, markdown export/copy, title UX, chat controls, model policy, empty states |
 | 2026-06-08 | Slice 7 shipped — MarkdownUI bubbles, per-message copy, chat Export → `.md` share sheet |
 | 2026-06-08 | Slice 8 shipped — auto title after first exchange; rename (nav inline, ⋯ sheet, list swipe sheet); list leading Export/Rename swipes; active-row bronze accent |
+| 2026-06-08 | Slice 9 / MVP complete — system light mode, smoke checklist, device acceptance gate |
+| 2026-06-08 | MVP signed off — all 8 user stories smoke-validated (device + simulator) |

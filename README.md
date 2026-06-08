@@ -27,12 +27,14 @@ This produces `vendor/llama/llama.xcframework` (iPhone device + arm64 simulator 
 
 ### Simulator vs device
 
-| Target | Metal | Inference |
-|--------|-------|-----------|
-| Simulator (arm64) | CPU only (`n_gpu_layers = 0`) | UI + SwiftData; stub runtime without xcframework |
-| Device | Metal (`n_gpu_layers = -1`) | Model import, load, and generation (Slice 1+) |
+| Target | Metal | Best for |
+|--------|-------|----------|
+| Simulator (arm64) | CPU only (`n_gpu_layers = 0`) | UI, SwiftData, export/copy, markdown, light mode |
+| Device | Metal (`n_gpu_layers = -1`) | Model import, streaming, stop, trim, title gen, perf |
 
-**Current MVP slice:** 1 complete (model import/forget, inference foundation, list/settings chrome). Conversation CRUD and chat arrive in Slices 2–3.
+**MVP status:** Slices 0–9 complete (2026-06-08). Run the [MVP smoke checklist](docs/mvp-smoke-checklist.md) on device before relying on inference in production.
+
+The app supports **system light and dark** appearance (dark-first design tokens).
 
 ## Project layout
 
@@ -40,9 +42,10 @@ This produces `vendor/llama/llama.xcframework` (iPhone device + arm64 simulator 
 Intrai2/              SwiftUI app (folder-sync Xcode group)
   App/                Entry point, root navigation
   Design/             Theme tokens from docs/design-handoff.md
-  Data/               SwiftData models
+  Data/               SwiftData models, ExportFormatter
   Features/           Conversations, Chat, Settings
-  Inference/          llama.cpp bridge (Slice 1+)
+  Services/           Chat, inference, title gen, settings
+  Inference/          llama.cpp bridge
 scripts/              xcframework build script
 vendor/llama/         gitignored — llama.xcframework output
 docs/                 Product, technical, and design briefs
@@ -51,9 +54,11 @@ docs/                 Product, technical, and design briefs
 ## Docs
 
 - [CONTEXT.md](CONTEXT.md) — project status and bootstrap
-- [docs/product-brief.md](docs/product-brief.md) — MVP scope
+- [docs/product-brief.md](docs/product-brief.md) — MVP scope and user stories
 - [docs/technical-brief.md](docs/technical-brief.md) — architecture
 - [docs/design-handoff.md](docs/design-handoff.md) — visual language
+- [docs/mvp-smoke-checklist.md](docs/mvp-smoke-checklist.md) — device acceptance checklist
+- [docs/discovery/handoff-latest.md](docs/discovery/handoff-latest.md) — session handoff
 
 ## License
 

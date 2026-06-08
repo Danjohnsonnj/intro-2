@@ -165,7 +165,6 @@ private struct ThemedScreenModifier: ViewModifier {
             .background(Theme.background(colorScheme).ignoresSafeArea())
             .foregroundStyle(Theme.textPrimary(colorScheme))
             .tint(Theme.accent)
-            .preferredColorScheme(.dark)
     }
 }
 

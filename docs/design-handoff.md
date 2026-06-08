@@ -1,6 +1,6 @@
 # Design handoff — Intrai-2
 
-**Status:** Discovery complete (signed off 2026-06-06). UI slices 2–8 implemented (2026-06-08).  
+**Status:** Discovery complete (signed off 2026-06-06). MVP UI slices 2–9 implemented (2026-06-08).  
 **Last updated:** 2026-06-08
 
 Locked visual and UX decisions for mocks and SwiftUI implementation. Authority: this doc > HTML mocks.
@@ -98,7 +98,7 @@ HTML probes define **flat bronze glyphs** on an **opaque warm nav bar** — not 
 | **6** | System prompt editor (`#2A2826`); creativity slider + `n_ctx` stepper | Done |
 | **7** | MarkdownUI bubbles; code block styling | Done |
 | **8** | Leading Rename/Export swipes; active row bronze bar | Done |
-| **9** | Light mode pass | **Next** |
+| **9** | Light mode pass | Done |
 
 ## Markdown in messages
 
@@ -180,3 +180,4 @@ Open in Safari: see `docs/archive/design-mocks/README.md`.
 | 2026-06-08 | Settings creativity slider (0.1–1.5); dropped duplicate inference status row |
 | 2026-06-08 | Slice 7 — markdown bubbles, export/copy implemented |
 | 2026-06-08 | Slice 8 — list swipes, active row, rename + auto-title implemented |
+| 2026-06-08 | Slice 9 — system light mode enabled; smoke checklist added |

@@ -6,7 +6,7 @@ On-device iPhone chat app using llama.cpp. See [CONTEXT.md](CONTEXT.md).
 
 ## Before coding
 
-Discovery complete (2026-06-06). MVP plan approved — see `~/.cursor/plans/intrai-2_mvp_plan_ce25251c.plan.md`. **Slices 0–8 implemented (S8 pending commit); next: Slice 9 smoke pass.** See `docs/discovery/handoff-latest.md`.
+Discovery complete (2026-06-06). MVP plan approved — see `~/.cursor/plans/intrai-2_mvp_plan_ce25251c.plan.md`. **MVP signed off (Slices 0–9, smoke passed 2026-06-08).** Next: post-MVP planning per `docs/discovery/handoff-latest.md`.
 
 ## Docs authority
 
@@ -35,3 +35,7 @@ Phathom agentmemory lessons cover llama.cpp iOS pitfalls, xcframework build, str
 ## Design probes
 
 Use `design-mock-probe` + `grill-me` before canonical HTML mocks. Review in Safari. Archive canonical mocks under `docs/archive/design-mocks/` when created.
+
+## Device validation
+
+Run [docs/mvp-smoke-checklist.md](docs/mvp-smoke-checklist.md) on physical iPhone 16 Pro+ for inference stories. Simulator covers UI, persistence, export/copy, light mode.
