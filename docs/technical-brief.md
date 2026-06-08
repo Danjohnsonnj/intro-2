@@ -78,6 +78,15 @@ ChatViewModel
 - Partial assistant message persisted on stop
 - `ScrollViewReader` scroll-to-bottom on draft text change
 
+### Post-MVP chat UX polish (deferred — after Slice 9)
+
+| Item | Intent |
+|------|--------|
+| **UI state before inference** | UI must fully settle **before** inference begins, in order: (1) keyboard dismisses, (2) message input clears, (3) send button state changes (→ Stop), (4) input row anchors to bottom of view, (5) blank assistant bubble appears with "Generating…" below it, (6) chat scrolls completely to bottom — **then** start inference. |
+| **Responsiveness during generation** | Keep the app fluid while inference runs on device (scroll, keyboard, navigation, stop feel, etc.). Details TBD at implementation. |
+| **Immediate stop interrupt** | Stop often only takes effect after ≥1 token streamed; investigate decode blocking and abort-callback latency beyond chunked prefill. |
+| **Proactive trim / summarization** | v1 `SlidingWindowTrimmer` is reactive (trim only when budget exceeded). Later turns slow as full history is rebuilt and prefill grows. Consider proactive trimming or `SummarizingTrimmer` (v1.1+) to cap prefill cost before budget pressure. Device UAT (2026-06-07): trim notice not yet observed in normal use; latency growth noticeable on longer threads. |
+
 ## Multi-turn context (locked)
 
 **Rebuild full history each turn** via `llama_chat_apply_template` + `startRawPrompt`. No warm KV append in v1.
@@ -185,3 +194,5 @@ Personal / sideload / dev install. Follow iOS sandbox rules for file access.
 | 2026-06-06 | Checkpoint 1 — initial brief from grill-me Q1–Q8 |
 | 2026-06-06 | Q9 — rebuild history + SlidingWindowTrimmer |
 | 2026-06-06 | Checkpoint 2 — Q10–Q20: Phathom copy scope, SwiftData, settings, MarkdownUI, title gen, model policy |
+| 2026-06-07 | Post-MVP chat UX polish — UI state before inference (settle sequence locked), responsiveness during generation |
+| 2026-06-07 | Device UAT note — trim notice rare in practice; proactive trim/summarization deferred |

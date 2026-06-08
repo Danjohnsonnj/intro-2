@@ -117,14 +117,13 @@ nonisolated final class LlamaCppRuntime: @unchecked Sendable, LlamaCppBridge {
     func countTemplatedUserPromptTokens(_ user: String) throws -> Int {
         guard let mdl = model else { throw LlamaInferenceError.modelNotLoaded }
         let formatted = makeFormattedChatPrompt(userText: user, model: mdl)
-        let vocab = llama_model_get_vocab(mdl)
-        let nTok = formatted.withCString { cstr in
-            Int32(-llama_tokenize(vocab, cstr, Int32(strlen(cstr)), nil, 0, false, true))
-        }
-        guard nTok > 0 else {
-            throw LlamaInferenceError.generationFailed("Failed to tokenize the prompt.")
-        }
-        return Int(nTok)
+        return try countFormattedPromptTokens(formatted, model: mdl)
+    }
+
+    func countChatPromptTokens(messages: [ChatPromptMessage], addGenerationPrompt: Bool) throws -> Int {
+        guard let mdl = model else { throw LlamaInferenceError.modelNotLoaded }
+        let formatted = try formatChatPrompt(messages: messages, addGenerationPrompt: addGenerationPrompt)
+        return try countFormattedPromptTokens(formatted, model: mdl)
     }
 
     func maxTemplatedPromptTokensForGeneration(_ generationMaxTokens: Int) -> Int {
@@ -203,20 +202,8 @@ nonisolated final class LlamaCppRuntime: @unchecked Sendable, LlamaCppBridge {
             let chunkSize = min(Int(config.physicalBatchSize), remaining)
             let batch = llama_batch_get_one(promptBuffer.advanced(by: nPos), Int32(chunkSize))
 
-            if nPos + chunkSize >= nPrompt + nPredict {
-                releaseGenerationState(freeContext: false)
-                return nil
-            }
-
             let decodeResult = llama_decode(ctx, batch)
-            if decodeResult < 0 {
-                releaseGenerationState(freeContext: false)
-                throw LlamaInferenceError.generationFailed("Inference error during decode (code \(decodeResult)).")
-            }
-            if decodeResult == 1 {
-                releaseGenerationState(freeContext: false)
-                throw LlamaInferenceError.contextLimitReached("Context full — try shorter content.")
-            }
+            try handleDecodeResult(decodeResult)
             nPos += chunkSize
 
             if shouldCancel {
@@ -228,23 +215,16 @@ nonisolated final class LlamaCppRuntime: @unchecked Sendable, LlamaCppBridge {
                 return ""
             }
         } else {
-            singleTokenBuffer.pointee = lastSampledToken
-            let batch = llama_batch_get_one(singleTokenBuffer, 1)
-
-            if nPos + 1 >= nPrompt + nPredict {
+            if nPos >= nPrompt + nPredict {
                 releaseGenerationState(freeContext: false)
                 return nil
             }
 
+            singleTokenBuffer.pointee = lastSampledToken
+            let batch = llama_batch_get_one(singleTokenBuffer, 1)
+
             let decodeResult = llama_decode(ctx, batch)
-            if decodeResult < 0 {
-                releaseGenerationState(freeContext: false)
-                throw LlamaInferenceError.generationFailed("Inference error during decode (code \(decodeResult)).")
-            }
-            if decodeResult == 1 {
-                releaseGenerationState(freeContext: false)
-                throw LlamaInferenceError.contextLimitReached("Context full — try shorter content.")
-            }
+            try handleDecodeResult(decodeResult)
             nPos += 1
         }
 
@@ -318,6 +298,17 @@ nonisolated final class LlamaCppRuntime: @unchecked Sendable, LlamaCppBridge {
         held = false
     }
 
+    private func countFormattedPromptTokens(_ formatted: String, model: OpaquePointer) throws -> Int {
+        let vocab = llama_model_get_vocab(model)
+        let nTok = formatted.withCString { cstr in
+            Int32(-llama_tokenize(vocab, cstr, Int32(strlen(cstr)), nil, 0, false, true))
+        }
+        guard nTok > 0 else {
+            throw LlamaInferenceError.generationFailed("Failed to tokenize the prompt.")
+        }
+        return Int(nTok)
+    }
+
     private func makeFormattedChatPrompt(userText: String, model: OpaquePointer) -> String {
         guard let templatePointer = llama_model_chat_template(model, nil) else {
             return Self.fallbackChatML(userText)
@@ -381,7 +372,7 @@ nonisolated final class LlamaCppRuntime: @unchecked Sendable, LlamaCppBridge {
         guard tokenCount > 0 else {
             throw LlamaInferenceError.generationFailed("Failed to tokenize the prompt.")
         }
-        let promptLimit = max(1, contextLimitTokens - config.promptSlackTokens)
+        let promptLimit = maxTemplatedPromptTokensForGeneration(options.maxTokens)
         if Int(tokenCount) > promptLimit {
             throw LlamaInferenceError.contextLimitReached(
                 "The prompt is too long for the current context (\(contextLimitTokens) tokens)."
@@ -438,6 +429,57 @@ nonisolated final class LlamaCppRuntime: @unchecked Sendable, LlamaCppBridge {
         llama_set_abort_callback(ctx, Self.abortTrampoline, Unmanaged.passUnretained(self).toOpaque())
     }
 
+    private func handleDecodeResult(_ decodeResult: Int32) throws {
+        if decodeResult == 1 {
+            releaseGenerationState(freeContext: false)
+            try recreateContext()
+            throw LlamaInferenceError.contextLimitReached("Context full — try shorter content.")
+        }
+        guard decodeResult >= 0 else {
+            releaseGenerationState(freeContext: false)
+            try recreateContext()
+            throw LlamaInferenceError.generationFailed("Inference error during decode (code \(decodeResult)).")
+        }
+    }
+
+    /// Rebuild llama context after a failed decode so the next turn can proceed.
+    private func recreateContext() throws {
+        guard let mdl = model else { return }
+        if let ctx = context {
+            llama_free(ctx)
+            context = nil
+        }
+
+        var contextParams = llama_context_default_params()
+        let trainCtx = Int(llama_model_n_ctx_train(mdl))
+        let requested = config.contextWindow
+        let effectiveCtx: UInt32
+        if trainCtx > 0 {
+            effectiveCtx = min(requested, UInt32(clamping: trainCtx))
+        } else {
+            effectiveCtx = requested
+        }
+        contextParams.n_ctx = effectiveCtx
+        contextParams.n_batch = effectiveCtx
+        contextParams.n_ubatch = config.physicalBatchSize
+        contextParams.n_seq_max = 1
+        contextParams.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_AUTO
+        contextParams.offload_kqv = true
+        contextParams.kv_unified = false
+
+        let nThreads = max(1, min(8, ProcessInfo.processInfo.processorCount - 2))
+        contextParams.n_threads = Int32(nThreads)
+        contextParams.n_threads_batch = Int32(nThreads)
+
+        guard let loadedContext = llama_init_from_model(mdl, contextParams) else {
+            throw LlamaInferenceError.modelLoadFailed("Unable to reinitialize llama context after inference failure.")
+        }
+
+        context = loadedContext
+        contextLimitTokens = Int(contextParams.n_ctx)
+        shouldCancel = false
+    }
+
     private func releaseGenerationState(freeContext: Bool) {
         if let ctx = context {
             llama_set_abort_callback(ctx, nil, nil)
@@ -484,6 +526,12 @@ nonisolated final class LlamaCppRuntime: @unchecked Sendable, LlamaCppBridge {
 
     func countTemplatedUserPromptTokens(_ user: String) throws -> Int {
         _ = user
+        throw LlamaInferenceError.modelNotLoaded
+    }
+
+    func countChatPromptTokens(messages: [ChatPromptMessage], addGenerationPrompt: Bool) throws -> Int {
+        _ = messages
+        _ = addGenerationPrompt
         throw LlamaInferenceError.modelNotLoaded
     }
 

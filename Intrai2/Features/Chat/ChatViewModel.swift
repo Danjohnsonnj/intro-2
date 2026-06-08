@@ -9,11 +9,12 @@ final class ChatViewModel {
     private(set) var isGenerating = false
     private(set) var generationError: String?
     private(set) var streamingMessageID: UUID?
+    private(set) var showTrimNotice = false
 
     let conversationID: UUID
 
     private let modelContext: ModelContext
-    private let generationService = ChatGenerationService()
+    private let chatService = ChatService()
     private var generationTask: Task<Void, Never>?
 
     init(conversationID: UUID, modelContext: ModelContext) {
@@ -73,6 +74,7 @@ final class ChatViewModel {
 
     private func beginSend(text: String, in conversation: Conversation) {
         generationError = nil
+        showTrimNotice = false
 
         let now = Date.now
         let nextOrderIndex = (conversation.messages.map(\.orderIndex).max() ?? -1) + 1
@@ -103,11 +105,11 @@ final class ChatViewModel {
             guard let self else { return }
             await Task.yield()
 
-            let promptMessages = self.promptMessages(for: conversation)
+            let history = self.chatHistory(for: conversation)
             self.saveContext()
 
             await self.runGeneration(
-                promptMessages: promptMessages,
+                history: history,
                 assistantMessage: assistantMessage,
                 conversation: conversation
             )
@@ -115,7 +117,7 @@ final class ChatViewModel {
     }
 
     private func runGeneration(
-        promptMessages: [ChatPromptMessage],
+        history: [ChatPromptMessage],
         assistantMessage: Message,
         conversation: Conversation
     ) async {
@@ -127,10 +129,15 @@ final class ChatViewModel {
         }
 
         do {
-            for try await chunk in generationService.stream(messages: promptMessages) {
+            for try await event in chatService.generate(history: history) {
                 if Task.isCancelled { break }
-                assistantMessage.content += chunk
-                touchConversation(conversation)
+                switch event {
+                case .historyTrimmed:
+                    showTrimNotice = true
+                case .chunk(let chunk):
+                    assistantMessage.content += chunk
+                    touchConversation(conversation)
+                }
             }
             touchConversation(conversation)
         } catch is CancellationError {
@@ -139,15 +146,15 @@ final class ChatViewModel {
             if !Task.isCancelled {
                 generationError = error.localizedDescription
                 if assistantMessage.content.isEmpty {
-                    assistantMessage.content = error.localizedDescription
+                    conversation.messages.removeAll { $0.id == assistantMessage.id }
                 }
                 touchConversation(conversation)
             }
         }
     }
 
-    private func promptMessages(for conversation: Conversation) -> [ChatPromptMessage] {
-        let history = sortedMessages(for: conversation)
+    private func chatHistory(for conversation: Conversation) -> [ChatPromptMessage] {
+        sortedMessages(for: conversation)
             .filter { message in
                 let role = message.role
                 guard role == ChatPromptMessage.roleUser || role == ChatPromptMessage.roleAssistant else {
@@ -162,8 +169,6 @@ final class ChatViewModel {
             .map { message in
                 ChatPromptMessage(role: message.role, content: message.content)
             }
-
-        return ChatPromptBuilder.transcript(history: history)
     }
 
     private func touchConversation(_ conversation: Conversation, at date: Date = .now) {

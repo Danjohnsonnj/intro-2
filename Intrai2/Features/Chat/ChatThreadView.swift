@@ -116,6 +116,14 @@ private struct ChatThreadBody: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: Theme.Spacing.messageGap) {
+                    if viewModel.showTrimNotice {
+                        ChatTrimNotice()
+                    }
+
+                    if let generationError = viewModel.generationError {
+                        ChatGenerationErrorNotice(message: generationError)
+                    }
+
                     let messages = viewModel.sortedMessages(for: conversation)
                     ForEach(messages) { message in
                         ChatMessageRow(
@@ -144,6 +152,9 @@ private struct ChatThreadBody: View {
             .onChange(of: conversation.messages.count) { _, _ in
                 scrollToBottom(proxy: proxy)
             }
+            .onChange(of: viewModel.showTrimNotice) { _, _ in
+                scrollToBottom(proxy: proxy)
+            }
             .onChange(of: streamingDraftSignature) { _, _ in
                 scrollToBottom(proxy: proxy)
             }
@@ -167,6 +178,49 @@ private struct ChatThreadBody: View {
         } else {
             proxy.scrollTo(bottomScrollAnchorID, anchor: .bottom)
         }
+    }
+}
+
+// MARK: - Ephemeral notices
+
+private struct ChatGenerationErrorNotice: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    let message: String
+
+    var body: some View {
+        Text(message)
+            .font(.system(size: 13))
+            .foregroundStyle(Theme.destructive)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Theme.destructive.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous)
+                    .strokeBorder(Theme.destructive.opacity(0.24), lineWidth: 1)
+            }
+    }
+}
+
+private struct ChatTrimNotice: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Text("Earlier messages trimmed")
+            .font(.system(size: 11, weight: .medium))
+            .kerning(0.44)
+            .textCase(.uppercase)
+            .foregroundStyle(Theme.textTertiary(colorScheme))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .overlay {
+                Capsule()
+                    .strokeBorder(Theme.border(colorScheme), lineWidth: 1)
+            }
+            .frame(maxWidth: .infinity)
     }
 }
 
