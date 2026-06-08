@@ -10,6 +10,8 @@ Private, on-device LLM chat for iPhone. Runs local models via llama.cpp + Metal.
 
 **MVP signed off** — all 9 vertical slices shipped and smoke-validated (2026-06-08). Checklist: [docs/mvp-smoke-checklist.md](docs/mvp-smoke-checklist.md) (passed).
 
+**Slice 10 signed off** — A1 UI settle before inference; smoke passed 2026-06-08. Checklist: [docs/post-mvp-smoke-checklist.md](docs/post-mvp-smoke-checklist.md) (passed).
+
 | Slice | Summary |
 |-------|---------|
 | 0 | Git, Xcode scaffold, SwiftData, Theme, NavigationStack |
@@ -22,11 +24,11 @@ Private, on-device LLM chat for iPhone. Runs local models via llama.cpp + Metal.
 | 7 | MarkdownUI bubbles, copy message, export `.md` |
 | 8 | Auto title, rename paths, list swipes, active row |
 | 9 | Light mode, smoke checklist, MVP docs checkpoint |
-| 10 | **Planned** — A1 UI settle before inference (see plan below) |
+| 10 | A1 UI settle before inference — two-phase send, deferred persist, settle rollback |
 
 **Design alignment** — list + settings + chat per canonical HTML mocks; flat nav chrome; system light + dark supported.
 
-**Post-MVP:** Slice 10 (A1) planned and reviewed — plan: `~/.cursor/plans/slice_10_a1_settle_b79a4cd1.plan.md`. Spec: [docs/technical-brief.md](docs/technical-brief.md) § Slice 10 A1. Handoff: [docs/discovery/handoff-latest.md](docs/discovery/handoff-latest.md).
+**Post-MVP:** Slice 10 (A1) signed off. Next: A2 stop interrupt latency or A3 responsiveness — see [docs/discovery/handoff-latest.md](docs/discovery/handoff-latest.md).
 
 ## Docs (source of truth)
 

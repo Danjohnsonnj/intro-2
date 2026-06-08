@@ -4,6 +4,7 @@ import SwiftUI
 /// Previews at bottom guard against regressions (idle / generating / multiline / toggle).
 struct ChatComposeBar: View {
     @Binding var text: String
+    @FocusState.Binding var isFocused: Bool
     var isGenerating: Bool
     var isModelReady: Bool
     var canSend: Bool
@@ -11,7 +12,6 @@ struct ChatComposeBar: View {
     var onStop: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
-    @FocusState private var isFocused: Bool
     @State private var measuredFieldHeight = Theme.Spacing.composeFieldMinHeight
 
     private var actionMode: ComposeActionMode {
@@ -166,8 +166,10 @@ private struct ComposeActionButtonStyle: ButtonStyle {
 
 #Preview("Compose — idle") {
     @Previewable @State var text = ""
+    @Previewable @FocusState var isFocused: Bool
     ChatComposeBar(
         text: $text,
+        isFocused: $isFocused,
         isGenerating: false,
         isModelReady: true,
         canSend: false,
@@ -180,8 +182,10 @@ private struct ComposeActionButtonStyle: ButtonStyle {
 
 #Preview("Compose — generating") {
     @Previewable @State var text = ""
+    @Previewable @FocusState var isFocused: Bool
     ChatComposeBar(
         text: $text,
+        isFocused: $isFocused,
         isGenerating: true,
         isModelReady: true,
         canSend: false,
@@ -194,8 +198,10 @@ private struct ComposeActionButtonStyle: ButtonStyle {
 
 #Preview("Compose — multiline") {
     @Previewable @State var text = "Line one\nLine two\nLine three"
+    @Previewable @FocusState var isFocused: Bool
     ChatComposeBar(
         text: $text,
+        isFocused: $isFocused,
         isGenerating: false,
         isModelReady: true,
         canSend: true,
@@ -209,9 +215,11 @@ private struct ComposeActionButtonStyle: ButtonStyle {
 #Preview("Compose — toggle send/stop") {
     @Previewable @State var text = ""
     @Previewable @State var isGenerating = false
+    @Previewable @FocusState var isFocused: Bool
     VStack(spacing: 20) {
         ChatComposeBar(
             text: $text,
+            isFocused: $isFocused,
             isGenerating: isGenerating,
             isModelReady: true,
             canSend: !text.isEmpty,

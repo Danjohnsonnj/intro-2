@@ -6,7 +6,7 @@ On-device iPhone chat app using llama.cpp. See [CONTEXT.md](CONTEXT.md).
 
 ## Before coding
 
-Discovery complete (2026-06-06). MVP plan approved — see `~/.cursor/plans/intrai-2_mvp_plan_ce25251c.plan.md`. **MVP signed off (Slices 0–9, smoke passed 2026-06-08).** Next: **Slice 10 (A1 settle)** — plan `~/.cursor/plans/slice_10_a1_settle_b79a4cd1.plan.md`, handoff `docs/discovery/handoff-latest.md`.
+Discovery complete (2026-06-06). MVP plan approved — see `~/.cursor/plans/intrai-2_mvp_plan_ce25251c.plan.md`. **MVP signed off (Slices 0–9, smoke passed 2026-06-08).** **Slice 10 (A1) signed off (smoke passed 2026-06-08).** Next: **A2 or A3** — handoff `docs/discovery/handoff-latest.md`.
 
 ## Docs authority
 

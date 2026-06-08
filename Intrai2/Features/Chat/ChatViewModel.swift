@@ -18,9 +18,19 @@ final class ChatViewModel {
     private let titleGenerationService = TitleGenerationService()
     private var generationTask: Task<Void, Never>?
 
+    private var pendingSendID: UUID?
+    private var pendingSendText: String?
+    private var pendingUserMessageID: UUID?
+    private var pendingAssistantMessageID: UUID?
+    private var pendingPreviousUpdatedAt: Date?
+
     init(conversationID: UUID, modelContext: ModelContext) {
         self.conversationID = conversationID
         self.modelContext = modelContext
+    }
+
+    var isSettling: Bool {
+        pendingSendID != nil && generationTask == nil
     }
 
     func sortedMessages(for conversation: Conversation) -> [Message] {
@@ -40,22 +50,92 @@ final class ChatViewModel {
         !composeText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    func send(isModelReady: Bool, in conversation: Conversation) {
-        let trimmed = composeText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, isModelReady else { return }
+    /// Phase 1: insert in-memory placeholders; no persist, no inference.
+    func prepareSend(text: String, in conversation: Conversation) -> UUID? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !isSettling else { return nil }
 
-        if isGenerating {
-            let pending = trimmed
-            composeText = ""
-            Task {
-                await stopAndWaitForCompletion()
-                beginSend(text: pending, in: conversation)
-            }
-            return
-        }
+        generationError = nil
+        showTrimNotice = false
+
+        let sendID = UUID()
+        pendingSendID = sendID
+        pendingSendText = trimmed
+        pendingPreviousUpdatedAt = conversation.updatedAt
+
+        let now = Date.now
+        let nextOrderIndex = (conversation.messages.map(\.orderIndex).max() ?? -1) + 1
+
+        let userMessage = Message(
+            role: ChatPromptMessage.roleUser,
+            content: trimmed,
+            createdAt: now,
+            orderIndex: nextOrderIndex
+        )
+        let assistantMessage = Message(
+            role: ChatPromptMessage.roleAssistant,
+            content: "",
+            createdAt: now.addingTimeInterval(0.001),
+            orderIndex: nextOrderIndex + 1
+        )
+
+        pendingUserMessageID = userMessage.id
+        pendingAssistantMessageID = assistantMessage.id
 
         composeText = ""
-        beginSend(text: trimmed, in: conversation)
+        isGenerating = true
+        streamingMessageID = assistantMessage.id
+        userMessage.conversation = conversation
+        assistantMessage.conversation = conversation
+        conversation.messages.append(userMessage)
+        conversation.messages.append(assistantMessage)
+        touchConversation(conversation, at: now)
+
+        return sendID
+    }
+
+    /// Phase 2: persist and start inference after UI settle completes.
+    func startPreparedInference(pendingSendID sendID: UUID, in conversation: Conversation) {
+        guard pendingSendID == sendID,
+              let assistantMessageID = pendingAssistantMessageID,
+              let assistantMessage = conversation.messages.first(where: { $0.id == assistantMessageID })
+        else { return }
+
+        clearPendingSendState()
+
+        let history = chatHistory(for: conversation)
+        saveContext()
+
+        generationTask = Task { [weak self] in
+            guard let self else { return }
+            await self.runGeneration(
+                history: history,
+                assistantMessage: assistantMessage,
+                conversation: conversation
+            )
+        }
+    }
+
+    /// Roll back a prepared send that never reached inference (settle-window Stop / navigate away).
+    func cancelPreparedSend(pendingSendID sendID: UUID, in conversation: Conversation) {
+        guard pendingSendID == sendID else { return }
+
+        if let userID = pendingUserMessageID {
+            conversation.messages.removeAll { $0.id == userID }
+        }
+        if let assistantID = pendingAssistantMessageID {
+            conversation.messages.removeAll { $0.id == assistantID }
+        }
+        if let previousUpdatedAt = pendingPreviousUpdatedAt {
+            conversation.updatedAt = previousUpdatedAt
+        }
+
+        isGenerating = false
+        streamingMessageID = nil
+        if let pendingSendText {
+            composeText = pendingSendText
+        }
+        clearPendingSendState()
     }
 
     func stopGeneration() {
@@ -73,48 +153,12 @@ final class ChatViewModel {
         await task.value
     }
 
-    private func beginSend(text: String, in conversation: Conversation) {
-        generationError = nil
-        showTrimNotice = false
-
-        let now = Date.now
-        let nextOrderIndex = (conversation.messages.map(\.orderIndex).max() ?? -1) + 1
-
-        let userMessage = Message(
-            role: ChatPromptMessage.roleUser,
-            content: text,
-            createdAt: now,
-            orderIndex: nextOrderIndex
-        )
-        let assistantMessage = Message(
-            role: ChatPromptMessage.roleAssistant,
-            content: "",
-            createdAt: now.addingTimeInterval(0.001),
-            orderIndex: nextOrderIndex + 1
-        )
-
-        // UI-first: flip generating state and attach in-memory messages before persistence/inference.
-        isGenerating = true
-        streamingMessageID = assistantMessage.id
-        userMessage.conversation = conversation
-        assistantMessage.conversation = conversation
-        conversation.messages.append(userMessage)
-        conversation.messages.append(assistantMessage)
-        touchConversation(conversation, at: now)
-
-        generationTask = Task { [weak self] in
-            guard let self else { return }
-            await Task.yield()
-
-            let history = self.chatHistory(for: conversation)
-            self.saveContext()
-
-            await self.runGeneration(
-                history: history,
-                assistantMessage: assistantMessage,
-                conversation: conversation
-            )
-        }
+    private func clearPendingSendState() {
+        pendingSendID = nil
+        pendingSendText = nil
+        pendingUserMessageID = nil
+        pendingAssistantMessageID = nil
+        pendingPreviousUpdatedAt = nil
     }
 
     private func runGeneration(
@@ -200,7 +244,9 @@ final class ChatViewModel {
         for (index, message) in sorted.enumerated() {
             message.orderIndex = index
         }
-        saveContext()
+        if !isSettling {
+            saveContext()
+        }
     }
 
     private static func roleSortRank(_ role: String) -> Int {

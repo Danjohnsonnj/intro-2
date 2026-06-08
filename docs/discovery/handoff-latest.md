@@ -1,36 +1,34 @@
 # Session handoff — Intrai-2
 
-**Updated:** 2026-06-08 (post-MVP planning — Slice 10 A1 locked, plan reviewed)
+**Updated:** 2026-06-08 (Slice 10 A1 signed off)
 
 Cold-start agents: read [CONTEXT.md](../../CONTEXT.md), this file, [docs/technical-brief.md](../technical-brief.md) § Slice 10 A1.
 
-**Implementation plan:** `~/.cursor/plans/slice_10_a1_settle_b79a4cd1.plan.md` (reviewed; ready to execute)
+**Checklist:** [docs/post-mvp-smoke-checklist.md](../post-mvp-smoke-checklist.md) (passed 2026-06-08)
 
 ```
 <handoff>
-GOAL: Implement Slice 10 — A1 UI settle before inference
-ENV: intrai-2 | main @ c1df2c0 | Intrai2.xcodeproj iOS 26.4+ | ahead of origin/main by 9 commits
-STATE: MVP signed off 2026-06-08 | S0–S9 shipped | No code changes this session (planning only)
-PHASE: Slice 10 implementation (next session)
-DECISIONS (A1 grill-me + plan review):
-  - Post-MVP priority: Tier A polish first — Slice 10 = A1 only (not A2/A3 bundle)
+GOAL: Pick next post-MVP slice (A2 or A3)
+ENV: intrai-2 | main | Intrai2.xcodeproj iOS 26.4+ | Slice 10 signed off
+STATE: MVP signed off | S0–S10 shipped + smoke passed | Long-thread scroll fix landed
+PHASE: Post-MVP — Tier A backlog (A2/A3)
+DECISIONS (A1 — locked):
   - Always resign compose focus on Send
-  - Two-phase send: ViewModel prepareSend → View settle (scroll) → startPreparedInference
+  - Two-phase send: prepareSend → View settle (scroll) → startPreparedInference
   - Inference gate: 200ms post-scroll wait + 300ms wall-clock cap from prepare
   - Cancel-then-send: same full settle after stop completes
   - Stop / back during settle: full rollback; restore text to compose; Stop re-focuses compose
   - Defer saveContext until startPreparedInference; skip migration save while isSettling
-  - Acceptance: new docs/post-mvp-smoke-checklist.md (create at slice delivery)
-DONE (this session):
-  - Post-MVP options triaged (Tier A/B/C/D)
-  - A1 grill-me Q1–Q11 locked
-  - Implementation plan written and plan-reviewed
+  - Long-thread settle: scrollToBottomAfterLayout targets streamingMessageID (LazyVStack layout race)
+DONE (Slice 10):
+  - Two-phase send state machine + settle orchestration + focus binding
+  - post-mvp-smoke-checklist passed (device + simulator)
 TODO (next session):
-  - Execute plan todos: vm-state-machine → view-settle-orchestration → compose-focus-binding → post-mvp-checklist → discovery-docs
-  - Run Slice 10 checklist on simulator; optional device spot-check
-POST-MVP BACKLOG (unchanged, not next):
+  - Commit Slice 10 (uncommitted)
+  - Grill-me for A2 (stop interrupt latency) or A3 (responsiveness during generation)
+POST-MVP BACKLOG (pick one):
   - A2 stop interrupt latency | A3 responsiveness | B SummarizingTrimmer | C web search
-NEXT: Resume → read plan → implement Slice 10 (no new grill-me unless fork)
+NEXT: Commit → plan A2 or A3
 BLOCKED: none
 </handoff>
 ```
@@ -40,18 +38,18 @@ BLOCKED: none
 | Commit | Contents |
 |--------|----------|
 | `c1df2c0` | Slice 9 — light mode, smoke checklist, MVP sign-off docs |
-| _(next)_ | Slice 10 — A1 settle sequence |
+| _(uncommitted)_ | Slice 10 — A1 settle sequence + long-thread scroll fix |
 
-Branch `main` — ahead of `origin/main` by 9 commits. Working tree clean.
+Branch `main` — Slice 10 changes uncommitted.
 
-## MVP — signed off
+## Slice 10 — signed off
 
-All 8 user stories implemented and validated. Checklist: [docs/mvp-smoke-checklist.md](../mvp-smoke-checklist.md) (passed 2026-06-08).
+Checklist: [docs/post-mvp-smoke-checklist.md](../post-mvp-smoke-checklist.md) (passed 2026-06-08).
 
 ## Resume prompt
 
 ```
-Resume Intrai-2. Slice 10 A1 is planned and reviewed.
+Resume Intrai-2. Slice 10 signed off.
 
-Read CONTEXT.md, docs/discovery/handoff-latest.md, and ~/.cursor/plans/slice_10_a1_settle_b79a4cd1.plan.md. Implement Slice 10 — no new grill-me unless scope forks.
+Commit Slice 10, then grill-me for A2 or A3.
 ```

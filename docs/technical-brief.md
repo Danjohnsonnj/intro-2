@@ -1,6 +1,6 @@
 # Technical brief — Intrai-2
 
-**Status:** MVP signed off — Slices 0–9 shipped; smoke passed 2026-06-08 ([mvp-smoke-checklist.md](mvp-smoke-checklist.md)). Slice 10 (A1) planned.  
+**Status:** MVP signed off — Slices 0–9 shipped; smoke passed 2026-06-08 ([mvp-smoke-checklist.md](mvp-smoke-checklist.md)). Slice 10 (A1) signed off — smoke passed 2026-06-08 ([post-mvp-smoke-checklist.md](post-mvp-smoke-checklist.md)).
 **Last updated:** 2026-06-08
 
 ## Stack (locked)
@@ -93,12 +93,12 @@ ChatViewModel
 
 | Item | Phase | Status |
 |------|-------|--------|
-| **UI state before inference (A1)** | Slice 10 | **Planned** — spec below |
+| **UI state before inference (A1)** | Slice 10 | **Shipped** — spec below |
 | **Responsiveness during generation (A3)** | Post–Slice 10 | Deferred |
 | **Immediate stop interrupt (A2)** | Post–Slice 10 | Deferred |
 | **Proactive trim / summarization** | v1.1+ | Deferred — device UAT (2026-06-07): trim notice rare; latency grows on long threads |
 
-#### Slice 10 A1 — UI settle before inference (locked, not yet shipped)
+#### Slice 10 A1 — UI settle before inference (shipped)
 
 **UX sequence on Send:** (1) keyboard dismisses, (2) compose clears, (3) Send → Stop, (4) compose row anchors bottom, (5) empty assistant bubble + "Generating…", (6) scroll to bottom — **then** inference.
 
@@ -110,7 +110,7 @@ ChatViewModel
 
 **Orchestration:** `ChatThreadBody` owns focus, `settleTask`, `activeSettleSendID`, and `onDisappear`. Plan: `~/.cursor/plans/slice_10_a1_settle_b79a4cd1.plan.md`.
 
-**Acceptance:** `docs/post-mvp-smoke-checklist.md` (create at slice delivery). MVP checklist stays frozen.
+**Acceptance:** [post-mvp-smoke-checklist.md](post-mvp-smoke-checklist.md). MVP checklist stays frozen.
 
 ## Multi-turn context (locked)
 
@@ -233,3 +233,6 @@ Personal / sideload / dev install. Follow iOS sandbox rules for file access.
 | 2026-06-08 | Slice 9 — light mode (removed forced dark), smoke checklist, README, MVP docs checkpoint |
 | 2026-06-08 | MVP signed off — smoke checklist passed (device + simulator) |
 | 2026-06-08 | Slice 10 A1 — grill-me locked; implementation plan reviewed (`slice_10_a1_settle_b79a4cd1.plan.md`) |
+| 2026-06-08 | Slice 10 — two-phase send (`prepareSend` → settle → `startPreparedInference`), deferred persist, settle rollback |
+| 2026-06-08 | Slice 10 — long-thread scroll fix (`scrollToBottomAfterLayout` + `streamingMessageID` focus) |
+| 2026-06-08 | Slice 10 signed off — post-mvp-smoke-checklist passed (device + simulator) |

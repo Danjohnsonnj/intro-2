@@ -73,9 +73,6 @@ struct ChatThreadView: View {
                 viewModel = ChatViewModel(conversationID: conversationID, modelContext: modelContext)
             }
         }
-        .onDisappear {
-            viewModel?.stopGeneration()
-        }
     }
 
     @ViewBuilder
@@ -167,73 +164,148 @@ private struct ChatThreadBody: View {
     let isModelReady: Bool
     let bottomScrollAnchorID: String
 
+    @FocusState private var isComposeFocused: Bool
+    @State private var settleTask: Task<Void, Never>?
+    @State private var activeSettleSendID: UUID?
+
     var body: some View {
-        messageThread
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Theme.background(colorScheme))
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                ChatComposeBar(
-                    text: $viewModel.composeText,
-                    isGenerating: viewModel.isGenerating,
-                    isModelReady: isModelReady,
-                    canSend: viewModel.canSend,
-                    onSend: { viewModel.send(isModelReady: isModelReady, in: conversation) },
-                    onStop: { viewModel.stopGeneration() }
-                )
-                .id(viewModel.isGenerating)
-            }
+        ScrollViewReader { proxy in
+            messageThread(proxy: proxy)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Theme.background(colorScheme))
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    ChatComposeBar(
+                        text: $viewModel.composeText,
+                        isFocused: $isComposeFocused,
+                        isGenerating: viewModel.isGenerating,
+                        isModelReady: isModelReady,
+                        canSend: viewModel.canSend,
+                        onSend: { handleSend(proxy: proxy) },
+                        onStop: { handleStop() }
+                    )
+                    .id(viewModel.isGenerating)
+                }
+                .onDisappear {
+                    handleDisappear()
+                }
+        }
     }
 
-    private var messageThread: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: Theme.Spacing.messageGap) {
-                    if viewModel.showTrimNotice {
-                        ChatTrimNotice()
-                    }
-
-                    if let generationError = viewModel.generationError {
-                        ChatGenerationErrorNotice(message: generationError)
-                    }
-
-                    let messages = viewModel.sortedMessages(for: conversation)
-                    ForEach(messages) { message in
-                        ChatMessageRow(
-                            message: message,
-                            isStreaming: viewModel.streamingMessageID == message.id,
-                            isGenerating: viewModel.isGenerating
-                        )
-                        .id(message.id)
-                    }
-
-                    Color.clear
-                        .frame(height: 1)
-                        .id(bottomScrollAnchorID)
+    private func messageThread(proxy: ScrollViewProxy) -> some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: Theme.Spacing.messageGap) {
+                if viewModel.showTrimNotice {
+                    ChatTrimNotice()
                 }
-                .padding(.horizontal, Theme.Spacing.screenHorizontal)
-                .padding(.top, 20)
-                .padding(.bottom, 12)
+
+                if let generationError = viewModel.generationError {
+                    ChatGenerationErrorNotice(message: generationError)
+                }
+
+                let messages = viewModel.sortedMessages(for: conversation)
+                ForEach(messages) { message in
+                    ChatMessageRow(
+                        message: message,
+                        isStreaming: viewModel.streamingMessageID == message.id,
+                        isGenerating: viewModel.isGenerating
+                    )
+                    .id(message.id)
+                }
+
+                Color.clear
+                    .frame(height: 1)
+                    .id(bottomScrollAnchorID)
             }
-            .scrollDismissesKeyboard(.interactively)
-            .onChange(of: viewModel.streamingMessageID) { _, _ in
-                scrollToBottom(proxy: proxy)
-            }
-            .onChange(of: viewModel.isGenerating) { _, _ in
-                scrollToBottom(proxy: proxy)
-            }
-            .onChange(of: conversation.messages.count) { _, _ in
-                scrollToBottom(proxy: proxy)
-            }
-            .onChange(of: viewModel.showTrimNotice) { _, _ in
-                scrollToBottom(proxy: proxy)
-            }
-            .onChange(of: streamingDraftSignature) { _, _ in
-                scrollToBottom(proxy: proxy)
-            }
-            .onAppear {
-                scrollToBottom(proxy: proxy, animated: false)
-            }
+            .padding(.horizontal, Theme.Spacing.screenHorizontal)
+            .padding(.top, 20)
+            .padding(.bottom, 12)
         }
+        .scrollDismissesKeyboard(.interactively)
+        .onChange(of: viewModel.streamingMessageID) { _, _ in
+            scrollToBottom(proxy: proxy)
+        }
+        .onChange(of: viewModel.isGenerating) { _, _ in
+            scrollToBottom(proxy: proxy)
+        }
+        .onChange(of: conversation.messages.count) { _, _ in
+            scrollToBottom(
+                proxy: proxy,
+                focusMessageID: viewModel.isSettling ? viewModel.streamingMessageID : nil
+            )
+        }
+        .onChange(of: viewModel.showTrimNotice) { _, _ in
+            scrollToBottom(proxy: proxy)
+        }
+        .onChange(of: streamingDraftSignature) { _, _ in
+            scrollToBottom(proxy: proxy)
+        }
+        .onAppear {
+            scrollToBottom(proxy: proxy, animated: false)
+        }
+    }
+
+    private func handleSend(proxy: ScrollViewProxy) {
+        let trimmed = viewModel.composeText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, isModelReady else { return }
+        guard !viewModel.isSettling else { return }
+
+        settleTask?.cancel()
+
+        settleTask = Task { @MainActor in
+            if viewModel.isGenerating && !viewModel.isSettling {
+                await viewModel.stopAndWaitForCompletion()
+            }
+
+            guard !Task.isCancelled else { return }
+
+            isComposeFocused = false
+            guard let sendID = viewModel.prepareSend(text: trimmed, in: conversation) else { return }
+
+            activeSettleSendID = sendID
+
+            let settleStart = ContinuousClock.now
+            await scrollToBottomAfterLayout(
+                proxy: proxy,
+                focusMessageID: viewModel.streamingMessageID,
+                animated: true
+            )
+            try? await Task.sleep(for: .milliseconds(200))
+
+            let elapsed = ContinuousClock.now - settleStart
+            let settleCap = Duration.milliseconds(300)
+            if elapsed < settleCap {
+                try? await Task.sleep(for: settleCap - elapsed)
+            }
+
+            guard !Task.isCancelled else { return }
+            guard viewModel.isSettling, activeSettleSendID == sendID else { return }
+
+            viewModel.startPreparedInference(pendingSendID: sendID, in: conversation)
+            activeSettleSendID = nil
+        }
+    }
+
+    private func handleStop() {
+        if viewModel.isSettling {
+            settleTask?.cancel()
+            if let sendID = activeSettleSendID {
+                viewModel.cancelPreparedSend(pendingSendID: sendID, in: conversation)
+            }
+            activeSettleSendID = nil
+            isComposeFocused = true
+        } else {
+            viewModel.stopGeneration()
+        }
+    }
+
+    private func handleDisappear() {
+        settleTask?.cancel()
+        if viewModel.isSettling, let sendID = activeSettleSendID {
+            viewModel.cancelPreparedSend(pendingSendID: sendID, in: conversation)
+        } else {
+            viewModel.stopGeneration()
+        }
+        activeSettleSendID = nil
     }
 
     private var streamingDraftSignature: String {
@@ -242,14 +314,37 @@ private struct ChatThreadBody: View {
         return message?.content ?? ""
     }
 
-    private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool = true) {
-        if animated {
-            withAnimation(.easeOut(duration: 0.2)) {
-                proxy.scrollTo(bottomScrollAnchorID, anchor: .bottom)
+    private func scrollToBottom(
+        proxy: ScrollViewProxy,
+        animated: Bool = true,
+        focusMessageID: UUID? = nil
+    ) {
+        let performScroll = {
+            if let focusMessageID {
+                proxy.scrollTo(focusMessageID, anchor: .bottom)
             }
-        } else {
             proxy.scrollTo(bottomScrollAnchorID, anchor: .bottom)
         }
+        if animated {
+            withAnimation(.easeOut(duration: 0.2)) {
+                performScroll()
+            }
+        } else {
+            performScroll()
+        }
+    }
+
+    /// LazyVStack may not include new tail rows in content size until after a layout pass.
+    private func scrollToBottomAfterLayout(
+        proxy: ScrollViewProxy,
+        focusMessageID: UUID?,
+        animated: Bool
+    ) async {
+        await Task.yield()
+        scrollToBottom(proxy: proxy, animated: animated, focusMessageID: focusMessageID)
+        try? await Task.sleep(for: .milliseconds(50))
+        guard !Task.isCancelled else { return }
+        scrollToBottom(proxy: proxy, animated: false, focusMessageID: focusMessageID)
     }
 }
 
