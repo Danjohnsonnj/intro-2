@@ -3,6 +3,7 @@ import SwiftUI
 
 struct RootView: View {
     @State private var modelStore = ModelStore()
+    @State private var inferenceSettingsStore = InferenceSettingsStore()
     @State private var navigationPath = NavigationPath()
 
     var body: some View {
@@ -14,6 +15,7 @@ struct RootView: View {
         }
         .themedScreen()
         .environment(modelStore)
+        .environment(inferenceSettingsStore)
         .task {
             modelStore.bootstrap()
         }

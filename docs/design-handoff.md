@@ -140,8 +140,8 @@ HTML probes define **flat bronze glyphs** on an **opaque warm nav bar** — not 
 - Flat bronze **‹** back (same as chat); edge swipe pop to list; no Liquid Glass
 - Model import (GGUF picker) + Forget
 - Global system prompt (multiline editor; token/char hint below)
-- Context length (`n_ctx`), temperature
-- Inference status indicator
+- Context length (`n_ctx`) stepper; **Creativity** range slider (0.1–1.5, step 0.1, default 0.7; maps to sampler temperature)
+- Model status row covers load/reload; no separate inference status row
 
 ## Mock workflow
 
@@ -176,3 +176,4 @@ Open in Safari: see `docs/archive/design-mocks/README.md`.
 | 2026-06-06 | Accent updated to shiny bronze `#CDA963` |
 | 2026-06-06 | Discovery signed off — phase complete; mocks canonical |
 | 2026-06-06 | Nav chrome: flat bronze glyphs, opt out of Liquid Glass; slice design checklist |
+| 2026-06-08 | Settings creativity slider (0.1–1.5); dropped duplicate inference status row |

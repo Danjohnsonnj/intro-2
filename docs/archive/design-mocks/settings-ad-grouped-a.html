@@ -287,6 +287,96 @@
       color: var(--text-primary);
     }
 
+    .range-row {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .range-row:last-child { border-bottom: none; }
+
+    .range-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .range-value {
+      font-size: 16px;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-secondary);
+      font-family: "SF Mono", ui-monospace, monospace;
+    }
+
+    .range-control {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .range-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: linear-gradient(
+        to right,
+        var(--accent) 0%,
+        var(--accent) var(--range-fill, 43%),
+        var(--surface-raised) var(--range-fill, 43%),
+        var(--surface-raised) 100%
+      );
+      outline: none;
+      cursor: pointer;
+    }
+
+    .range-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 var(--surface-highlight);
+      cursor: pointer;
+    }
+
+    .range-slider::-webkit-slider-thumb:active {
+      background: var(--surface-raised);
+      border-color: var(--accent);
+    }
+
+    .range-slider::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+      cursor: pointer;
+    }
+
+    .range-slider::-moz-range-track {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--surface-raised);
+    }
+
+    .range-endpoints {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      letter-spacing: 0.02em;
+    }
+
     .home-indicator {
       height: 34px;
       display: flex;
@@ -307,7 +397,7 @@
 <body>
   <header class="page-header">
     <h1>Intrai-2 · Settings</h1>
-    <p>Grouped instrument panel — model, system prompt, inference params, status. Flat surfaces, hairline borders. Status copy is honest metadata, not anthropomorphic.</p>
+    <p>Grouped instrument panel — model, system prompt, inference params, status. Context length uses steppers; creativity uses a 0.1–1.5 range slider (0.1 step, default 0.7). Flat surfaces, hairline borders.</p>
   </header>
 
   <div class="frames">
@@ -362,12 +452,26 @@
                   <span class="stepper-btn">+</span>
                 </div>
               </div>
-              <div class="row row-inline">
-                <span class="row-label">Temperature</span>
-                <div class="stepper">
-                  <span class="stepper-btn">−</span>
-                  <span class="stepper-value">0.7</span>
-                  <span class="stepper-btn">+</span>
+              <div class="range-row">
+                <div class="range-header">
+                  <span class="row-label">Creativity</span>
+                  <span class="range-value" data-range-value>0.7</span>
+                </div>
+                <div class="range-control">
+                  <input
+                    class="range-slider"
+                    type="range"
+                    min="0.1"
+                    max="1.5"
+                    step="0.1"
+                    value="0.7"
+                    aria-label="Creativity"
+                    data-range-slider
+                  >
+                  <div class="range-endpoints">
+                    <span>Focused</span>
+                    <span>Varied</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -428,12 +532,26 @@
                   <span class="stepper-btn">+</span>
                 </div>
               </div>
-              <div class="row row-inline">
-                <span class="row-label">Temperature</span>
-                <div class="stepper">
-                  <span class="stepper-btn">−</span>
-                  <span class="stepper-value">0.7</span>
-                  <span class="stepper-btn">+</span>
+              <div class="range-row">
+                <div class="range-header">
+                  <span class="row-label">Creativity</span>
+                  <span class="range-value" data-range-value>0.7</span>
+                </div>
+                <div class="range-control">
+                  <input
+                    class="range-slider"
+                    type="range"
+                    min="0.1"
+                    max="1.5"
+                    step="0.1"
+                    value="0.7"
+                    aria-label="Creativity"
+                    data-range-slider
+                  >
+                  <div class="range-endpoints">
+                    <span>Focused</span>
+                    <span>Varied</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -443,5 +561,23 @@
       </div>
     </div>
   </div>
+
+  <script>
+    document.querySelectorAll('[data-range-slider]').forEach((slider) => {
+      const valueEl = slider.closest('.range-row')?.querySelector('[data-range-value]');
+      const sync = () => {
+        const value = Number(slider.value);
+        const min = Number(slider.min);
+        const max = Number(slider.max);
+        if (valueEl) {
+          valueEl.textContent = value.toFixed(1);
+        }
+        const pct = ((value - min) / (max - min)) * 100;
+        slider.style.setProperty('--range-fill', `${pct}%`);
+      };
+      slider.addEventListener('input', sync);
+      sync();
+    });
+  </script>
 </body>
 </html>

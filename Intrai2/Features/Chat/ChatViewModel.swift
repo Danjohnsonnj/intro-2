@@ -129,7 +129,11 @@ final class ChatViewModel {
         }
 
         do {
-            for try await event in chatService.generate(history: history) {
+            for try await event in chatService.generate(
+                history: history,
+                systemPrompt: SettingsStore.resolvedSystemPrompt,
+                options: SettingsStore.generationOptions()
+            ) {
                 if Task.isCancelled { break }
                 switch event {
                 case .historyTrimmed:

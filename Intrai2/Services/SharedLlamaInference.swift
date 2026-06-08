@@ -15,14 +15,27 @@ enum SharedLlamaInferenceError: LocalizedError {
     }
 }
 
+private nonisolated func makeLlamaRuntimeConfig() -> LlamaCppRuntime.RuntimeConfig {
+    LlamaCppRuntime.RuntimeConfig(
+        contextWindow: SettingsStore.nCtx,
+        promptSlackTokens: 64,
+        physicalBatchSize: 1024
+    )
+}
+
 /// Serializes load → inference → unload so concurrent callers cannot unload mid-generation.
 actor SharedLlamaInference {
     static let shared = SharedLlamaInference()
 
-    private let runtime = LlamaCppRuntime()
+    private var runtime: LlamaCppRuntime
     private let lifecycleLock = AsyncLock()
     private var loadedPath: String?
+    private var loadedContextWindow: UInt32?
     private var scopedAccess: ModelManager.ScopedAccess?
+
+    private init() {
+        runtime = LlamaCppRuntime(config: makeLlamaRuntimeConfig())
+    }
 
     func withSession<R: Sendable>(
         unloadOnExit: Bool = true,
@@ -48,6 +61,18 @@ actor SharedLlamaInference {
         await lifecycleLock.release()
     }
 
+    /// Drop loaded model/context so the next session picks up current SettingsStore values.
+    func reloadForSettingsChange() async {
+        await lifecycleLock.acquire()
+        runtime.unloadModel()
+        loadedPath = nil
+        loadedContextWindow = nil
+        scopedAccess?.end()
+        scopedAccess = nil
+        runtime = LlamaCppRuntime(config: makeLlamaRuntimeConfig())
+        await lifecycleLock.release()
+    }
+
     /// Interrupt an in-flight decode immediately (abort callback + shouldCancel flag).
     func cancelActiveGeneration() {
         runtime.cancelGeneration()
@@ -63,7 +88,8 @@ actor SharedLlamaInference {
 
     private func swapToLoadedModelIfNeeded(access: ModelManager.ScopedAccess) async throws {
         let path = access.path
-        if loadedPath == path {
+        let requestedContext = SettingsStore.nCtx
+        if loadedPath == path, loadedContextWindow == requestedContext {
             ModelManager.setLastLoadFailed(false)
             access.end()
             return
@@ -73,16 +99,20 @@ actor SharedLlamaInference {
         scopedAccess?.end()
         scopedAccess = nil
         loadedPath = nil
+        loadedContextWindow = nil
+        runtime = LlamaCppRuntime(config: makeLlamaRuntimeConfig())
 
         scopedAccess = access
         do {
             try runtime.loadModel(path: path)
             loadedPath = path
+            loadedContextWindow = requestedContext
             ModelManager.setLastLoadFailed(false)
         } catch {
             scopedAccess?.end()
             scopedAccess = nil
             loadedPath = nil
+            loadedContextWindow = nil
             ModelManager.setLastLoadFailed(true)
             throw error
         }
@@ -91,6 +121,7 @@ actor SharedLlamaInference {
     private func unloadLocked() async {
         runtime.unloadModel()
         loadedPath = nil
+        loadedContextWindow = nil
         scopedAccess?.end()
         scopedAccess = nil
     }

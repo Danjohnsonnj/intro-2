@@ -39,7 +39,7 @@ Intrai v1 was under-planned, lacked cohesive design, and accumulated technical d
 - **Markdown rendering** in assistant (and user) messages (MarkdownUI)
 - **Export conversation** to `.md` file (share sheet)
 - **Copy message** as markdown to clipboard
-- Basic settings: model path, context length, temperature, **global system prompt**
+- Basic settings: model path, context length, creativity, **global system prompt**
 - Conversation list with **auto-generated titles** (see below)
 - Navigation: list → chat push; Settings via gear; swipe trailing delete, leading rename & export
 
@@ -104,7 +104,7 @@ Intrai v1 was under-planned, lacked cohesive design, and accumulated technical d
 4. **Resume history** — As a user, I can quit the app and return to the same conversations and messages.
 5. **Manage conversations** — As a user, I can see titled conversations (no previews), open, delete, and edit titles.
 6. **Read formatted replies** — As a user, I see markdown (code blocks, lists, emphasis) rendered cleanly in messages.
-7. **Configure inference** — As a user, I can adjust model, context length, temperature, and global system prompt in Settings.
+7. **Configure inference** — As a user, I can adjust model, context length, creativity, and global system prompt in Settings.
 8. **Export & copy** — As a user, I can export a conversation as markdown or copy any message as markdown.
 
 ## Settings (v1 fields)
@@ -114,7 +114,7 @@ Intrai v1 was under-planned, lacked cohesive design, and accumulated technical d
 | GGUF model | none | Security-scoped bookmark; global single model |
 | System prompt | see technical brief | Editable; empty save restores default |
 | Context length (`n_ctx`) | 4096 | 2048 / 4096 / 8192; reload on change |
-| Temperature | 0.7 | |
+| Creativity | 0.7 | Range 0.1–1.5, step 0.1; maps to sampler temperature; applies on next send |
 
 Changing or removing model reloads on save; all conversations use active model on next send (no confirmation).
 

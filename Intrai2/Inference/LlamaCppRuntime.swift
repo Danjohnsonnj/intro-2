@@ -536,7 +536,7 @@ nonisolated final class LlamaCppRuntime: @unchecked Sendable, LlamaCppBridge {
     }
 
     func maxTemplatedPromptTokensForGeneration(_ generationMaxTokens: Int) -> Int {
-        let contextLimit = 4096
+        let contextLimit = Int(SettingsStore.nCtx)
         let slack = 64
         let generationBudget = max(1, generationMaxTokens)
         return max(1, min(contextLimit - slack, contextLimit - generationBudget - 1))

@@ -122,7 +122,7 @@ SwiftData greenfield schema — do not copy Phathom `ChatThread`/`ChatMessage` (
 }
 ```
 
-Settings (model bookmark, system prompt, `n_ctx`, temperature) in **UserDefaults**.
+Settings (model bookmark, system prompt, `n_ctx`, creativity) in **UserDefaults**. Creativity is stored as sampler temperature.
 
 List: `@Query(sort: \Conversation.updatedAt, order: .reverse)`.
 
@@ -132,7 +132,7 @@ List: `@Query(sort: \Conversation.updatedAt, order: .reverse)`.
 |---------|---------|-------|
 | System prompt | Global, editable in Settings | Strong default on first run; empty save → silently restore default |
 | `n_ctx` | 4096 | User: 2048 / 4096 / 8192; capped at `llama_model_n_ctx_train`; reload on change |
-| Temperature | 0.7 | |
+| Creativity | 0.7 | User: 0.1–1.5, step 0.1; UI label **Creativity**; persisted as sampler temperature; applies on next send (no context reload) |
 
 Default system prompt intent: helpful, complete, concise responses. Proposed copy:
 

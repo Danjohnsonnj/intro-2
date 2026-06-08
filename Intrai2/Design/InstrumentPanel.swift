@@ -126,3 +126,104 @@ struct InstrumentDivider: View {
             .overlay(Theme.border(colorScheme))
     }
 }
+
+struct InstrumentStepperRow: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    let label: String
+    let value: String
+    let onDecrement: () -> Void
+    let onIncrement: () -> Void
+    var decrementEnabled: Bool = true
+    var incrementEnabled: Bool = true
+
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.instrumentRowLabel)
+                .foregroundStyle(Theme.textPrimary(colorScheme))
+
+            Spacer(minLength: 12)
+
+            HStack(spacing: 12) {
+                stepperButton(title: "−", enabled: decrementEnabled, action: onDecrement)
+                Text(value)
+                    .font(.system(size: 16, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Theme.textPrimary(colorScheme))
+                    .frame(minWidth: 48)
+                    .multilineTextAlignment(.center)
+                stepperButton(title: "+", enabled: incrementEnabled, action: onIncrement)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(Theme.surface(colorScheme))
+    }
+
+    private func stepperButton(title: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 18, weight: .light))
+                .foregroundStyle(enabled ? Theme.accent : Theme.textTertiary(colorScheme))
+                .frame(width: 36, height: 36)
+                .background(Theme.surfaceRaised(colorScheme))
+                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.sm))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.Radius.sm)
+                        .stroke(Theme.borderStrong(colorScheme), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+    }
+}
+
+struct InstrumentCreativitySliderRow: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    let label: String
+    @Binding var value: Double
+    let onEditingChanged: (Double) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(label)
+                    .font(.instrumentRowLabel)
+                    .foregroundStyle(Theme.textPrimary(colorScheme))
+
+                Spacer(minLength: 12)
+
+                Text(String(format: "%.1f", value))
+                    .font(.system(size: 16, weight: .regular, design: .monospaced))
+                    .foregroundStyle(Theme.textSecondary(colorScheme))
+            }
+
+            VStack(spacing: 6) {
+                Slider(
+                    value: Binding(
+                        get: { value },
+                        set: { newValue in
+                            value = SettingsStore.clampCreativity(newValue)
+                            onEditingChanged(value)
+                        }
+                    ),
+                    in: SettingsStore.minCreativity ... SettingsStore.maxCreativity,
+                    step: SettingsStore.creativityStep
+                )
+                .tint(Theme.accent)
+
+                HStack {
+                    Text("Focused")
+                    Spacer()
+                    Text("Varied")
+                }
+                .font(.system(size: 11))
+                .foregroundStyle(Theme.textTertiary(colorScheme))
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(Theme.surface(colorScheme))
+    }
+}
