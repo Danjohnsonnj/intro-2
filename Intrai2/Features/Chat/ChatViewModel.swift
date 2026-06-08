@@ -15,6 +15,7 @@ final class ChatViewModel {
 
     private let modelContext: ModelContext
     private let chatService = ChatService()
+    private let titleGenerationService = TitleGenerationService()
     private var generationTask: Task<Void, Never>?
 
     init(conversationID: UUID, modelContext: ModelContext) {
@@ -144,8 +145,10 @@ final class ChatViewModel {
                 }
             }
             touchConversation(conversation)
+            scheduleAutoTitleIfNeeded(for: conversation)
         } catch is CancellationError {
             touchConversation(conversation)
+            scheduleAutoTitleIfNeeded(for: conversation)
         } catch {
             if !Task.isCancelled {
                 generationError = error.localizedDescription
@@ -206,5 +209,42 @@ final class ChatViewModel {
 
     private func saveContext() {
         try? modelContext.save()
+    }
+
+    private func scheduleAutoTitleIfNeeded(for conversation: Conversation) {
+        guard shouldAutoGenerateTitle(for: conversation) else { return }
+        guard let firstUserMessage = firstUserMessageContent(in: conversation) else { return }
+
+        Task {
+            guard let title = await titleGenerationService.generateTitle(from: firstUserMessage) else {
+                return
+            }
+            guard shouldAutoGenerateTitle(for: conversation) else { return }
+            conversation.title = title
+            touchConversation(conversation)
+            saveContext()
+        }
+    }
+
+    private func shouldAutoGenerateTitle(for conversation: Conversation) -> Bool {
+        guard !conversation.titleLocked else { return false }
+        guard conversation.title == Conversation.defaultTitle else { return false }
+
+        let messages = sortedMessages(for: conversation)
+        guard messages.count == 2 else { return false }
+        guard messages[0].role == ChatPromptMessage.roleUser else { return false }
+        guard messages[1].role == ChatPromptMessage.roleAssistant else { return false }
+
+        let assistantContent = messages[1].content.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !assistantContent.isEmpty
+    }
+
+    private func firstUserMessageContent(in conversation: Conversation) -> String? {
+        let messages = sortedMessages(for: conversation)
+        guard let first = messages.first, first.role == ChatPromptMessage.roleUser else {
+            return nil
+        }
+        let trimmed = first.content.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }

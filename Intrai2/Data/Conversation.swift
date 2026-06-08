@@ -3,6 +3,8 @@ import SwiftData
 
 @Model
 final class Conversation {
+    static let defaultTitle = "New conversation"
+
     var id: UUID
     var title: String
     var titleLocked: Bool
@@ -14,7 +16,7 @@ final class Conversation {
 
     init(
         id: UUID = UUID(),
-        title: String = "New conversation",
+        title: String = Conversation.defaultTitle,
         titleLocked: Bool = false,
         createdAt: Date = .now,
         updatedAt: Date = .now

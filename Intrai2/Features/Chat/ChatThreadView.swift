@@ -11,6 +11,9 @@ struct ChatThreadView: View {
 
     @State private var viewModel: ChatViewModel?
     @State private var exportShareItem: ExportShareItem?
+    @State private var isRenamingTitle = false
+    @State private var renameDraft = ""
+    @State private var showsRenameSheet = false
 
     private let bottomScrollAnchorID = "chat-thread-bottom"
 
@@ -27,7 +30,6 @@ struct ChatThreadView: View {
         Group {
             if let conversation {
                 chatContent(conversation: conversation)
-                    .navigationTitle(conversation.title)
             } else {
                 ContentUnavailableView(
                     "Conversation not found",
@@ -45,6 +47,13 @@ struct ChatThreadView: View {
             }
             .instrumentFlatToolbarItem()
 
+            if let conversation {
+                ToolbarItem(placement: .principal) {
+                    chatNavigationTitle(conversation: conversation)
+                }
+                .instrumentFlatToolbarItem()
+            }
+
             ToolbarItem(placement: .topBarTrailing) {
                 chatOverflowMenu(conversation: conversation)
             }
@@ -53,6 +62,11 @@ struct ChatThreadView: View {
         .sheet(item: $exportShareItem) { item in
             ConversationShareSheet(items: [item.url])
                 .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $showsRenameSheet) {
+            if let conversation {
+                ConversationRenameSheet(conversation: conversation)
+            }
         }
         .onAppear {
             if viewModel == nil {
@@ -81,36 +95,66 @@ struct ChatThreadView: View {
     }
 
     @ViewBuilder
+    private func chatNavigationTitle(conversation: Conversation) -> some View {
+        if isRenamingTitle {
+            TextField("Title", text: $renameDraft)
+                .font(.system(size: 17, weight: .semibold))
+                .multilineTextAlignment(.center)
+                .submitLabel(.done)
+                .onSubmit {
+                    commitInlineRename(for: conversation)
+                }
+        } else {
+            Button {
+                beginInlineRename(conversation: conversation)
+            } label: {
+                Text(conversation.title)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Theme.textPrimary(colorScheme))
+                    .lineLimit(1)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Conversation title")
+            .accessibilityHint("Double tap to rename")
+        }
+    }
+
+    @ViewBuilder
     private func chatOverflowMenu(conversation: Conversation?) -> some View {
         Menu {
             if let conversation {
                 Button {
-                    exportConversation(conversation)
+                    showsRenameSheet = true
+                } label: {
+                    Label("Rename", systemImage: "pencil")
+                }
+
+                Button {
+                    exportShareItem = ConversationExport.shareItem(for: conversation)
                 } label: {
                     Label("Export", systemImage: "square.and.arrow.up")
                 }
                 .disabled(conversation.messages.isEmpty)
             }
-            // Rename arrives in Slice 8.
         } label: {
             InstrumentTintedGlyph(base: "⋯")
         }
         .accessibilityLabel("Conversation actions")
     }
 
-    private func exportConversation(_ conversation: Conversation) {
-        do {
-            let url = try ExportFormatter.writeTemporaryMarkdownFile(for: conversation)
-            exportShareItem = ExportShareItem(url: url)
-        } catch {
-            // Export is best-effort; share sheet simply won't open on failure.
-        }
+    private func beginInlineRename(conversation: Conversation) {
+        renameDraft = conversation.title
+        isRenamingTitle = true
     }
-}
 
-private struct ExportShareItem: Identifiable {
-    let id = UUID()
-    let url: URL
+    private func commitInlineRename(for conversation: Conversation) {
+        ConversationTitleEditing.applyManualRename(
+            to: conversation,
+            title: renameDraft,
+            in: modelContext
+        )
+        isRenamingTitle = false
+    }
 }
 
 // MARK: - Thread body (dedicated View + @Bindable for reliable compose observation)

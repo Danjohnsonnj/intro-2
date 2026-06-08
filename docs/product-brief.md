@@ -124,7 +124,7 @@ Long conversations exceed model context. v1: oldest turns dropped automatically 
 
 ## Open product questions
 
-- [ ] Default system prompt exact copy (intent locked; wording tunable at implementation)
+- [x] Default system prompt exact copy — shipped in Slice 6 (`ChatPromptBuilder.defaultSystemPrompt`)
 
 ## Changelog
 
@@ -133,3 +133,5 @@ Long conversations exceed model context. v1: oldest turns dropped automatically 
 | 2026-06-06 | Checkpoint 1 — initial brief from grill-me Q1–Q8 |
 | 2026-06-06 | Q9 — sliding window trim v1; summarizing trimmer v1.1+ |
 | 2026-06-06 | Checkpoint 2 — Q10–Q20: persistence, settings, markdown export/copy, title UX, chat controls, model policy, empty states |
+| 2026-06-08 | Slice 7 shipped — MarkdownUI bubbles, per-message copy, chat Export → `.md` share sheet |
+| 2026-06-08 | Slice 8 shipped — auto title after first exchange; rename (nav inline, ⋯ sheet, list swipe sheet); list leading Export/Rename swipes; active-row bronze accent |

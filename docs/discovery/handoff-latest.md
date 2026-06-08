@@ -1,6 +1,6 @@
 # Session handoff — Intrai-2
 
-**Updated:** 2026-06-08 (session end — Slice 7 complete, pending user commit)
+**Updated:** 2026-06-08 (docs checkpoint — Slice 8 ready to commit; next: Slice 9)
 
 Cold-start agents: read [CONTEXT.md](../../CONTEXT.md), this file, [docs/technical-brief.md](../technical-brief.md), then the approved plan.
 
@@ -8,27 +8,27 @@ Cold-start agents: read [CONTEXT.md](../../CONTEXT.md), this file, [docs/technic
 
 ```
 <handoff>
-GOAL: Implement Slice 8 (auto title, rename UX, list leading swipes)
-ENV: intrai-2 | main (S7 uncommitted — user committing before next session) | Intrai2.xcodeproj iOS 26.4+ | 37 Swift files
-STATE: S0–S7 done | UAT: export ✓, markdown render ✓, heading hierarchy fixed ✓
-PHASE: implementation — Slice 8
-DECISIONS:
-  - MarkdownUI on all message bubbles; 16ms coalesced re-parse during stream
-  - ChatMarkdownTheme must define heading1–heading6 (else all headers = body size); relative .em sizes on 16pt base
-  - Code blocks: SF Mono 13px, #2A2826 background, border per mock
-  - Copy markdown: per-message context menu → UIPasteboard
-  - Export: chat ⋯ → ExportFormatter → temp .md → share sheet
-  - Export format: `# title`, `## User` / `## Assistant`, raw markdown body
-DONE (Slice 7):
-  - ChatMessageMarkdown + ChatMarkdownTheme (incl. heading1–6)
-  - ExportFormatter.swift + ConversationShareSheet
-  - ChatThreadView: markdown bubbles, context menu copy, ⋯ Export
-TODO (Slice 8):
-  - TitleGenerationService after first complete exchange
-  - Rename: nav title tap, chat ⋯, list leading swipe (sets titleLocked)
-  - List leading Export swipe (reuse ExportFormatter)
-  - Active row bronze accent bar
-NEXT: Slice 8
+GOAL: Slice 9 — device smoke pass, light mode check, MVP acceptance gate
+ENV: intrai-2 | main | Intrai2.xcodeproj iOS 26.4+ | 40 Swift files
+STATE: S0–S8 implemented, build ✓ | User committing Slice 8 before next session
+PHASE: implementation — Slice 9 (final MVP slice)
+DECISIONS (Slice 8 — locked):
+  - Auto title: once after first exchange (exactly 2 msgs), default title + !titleLocked; first user msg ~500 char cap
+  - TitleGenerationService: dedicated system prompt, maxTokens 24, temp 0.3; SharedLlamaInference actor
+  - No title retry: eligibility requires messages.count == 2 (failure keeps "New conversation")
+  - Manual rename sets titleLocked: nav title inline TextField, chat ⋯ sheet, list leading swipe sheet
+  - List swipes: leading Rename (surfaceRaised) + Export (accent); trailing Delete unchanged
+  - Active row: accentSubtle + 3px bronze bar; activeConversationID in RootView (persists after pop)
+DONE (S0–S8):
+  - Scaffold → inference → list CRUD → chat stream → stop → trim → settings
+  - MarkdownUI + export/copy (S7)
+  - Auto title + rename + list swipes + active row (S8)
+TODO (Slice 9):
+  - Device smoke checklist (intrai-llama derived, minus web search)
+  - Light mode sanity — list, chat, settings
+  - Cross-screen empty states + no-model banner + send disabled
+  - Final CONTEXT/AGENTS/handoff if gaps found during smoke
+NEXT: Slice 9 after user commits Slice 8
 BLOCKED: none
 </handoff>
 ```
@@ -37,37 +37,48 @@ BLOCKED: none
 
 | Commit | Contents |
 |--------|----------|
-| `207bd03` | Slice 6 (last committed) |
-| _(pending)_ | Slice 7 — user committing this session |
+| `9a80143` | Slice 7 — MarkdownUI, export, copy |
+| _(pending)_ | Slice 8 — title gen, rename, list swipes, active row + doc updates |
 
-**Uncommitted files:** `ExportFormatter.swift`, `ChatMessageMarkdown.swift`, `ChatMarkdownTheme.swift`, `ConversationShareSheet.swift`, `ChatThreadView.swift`, `CONTEXT.md`, `AGENTS.md`, `handoff-latest.md`
+Branch `main` — ahead of `origin/main` by 7 commits (+ Slice 8 pending).
 
-Branch `main` — ahead of `origin/main` by 6 commits (+ Slice 7 pending).
+**Slice 8 files (uncommitted):**
 
-## Slice 8 scope (from plan)
+| File | Role |
+|------|------|
+| `Intrai2/Services/TitleGenerationService.swift` | One-shot auto title on inference actor |
+| `Intrai2/Features/Conversations/ConversationTitleEditing.swift` | Manual rename + `titleLocked` |
+| `Intrai2/Features/Conversations/ConversationRenameSheet.swift` | Rename sheet (⋯ + list swipe) |
+| `Intrai2/Features/Conversations/ConversationExport.swift` | Shared export → share sheet |
+| `Intrai2/Features/Chat/ChatViewModel.swift` | `scheduleAutoTitleIfNeeded` |
+| `Intrai2/Features/Chat/ChatThreadView.swift` | Inline title, ⋯ Rename/Export |
+| `Intrai2/Features/Conversations/ConversationListView.swift` | Leading swipes, active row |
+| `Intrai2/App/RootView.swift` | `activeConversationID` |
+| `Intrai2/Data/Conversation.swift` | `defaultTitle` constant |
+| `CONTEXT.md`, `AGENTS.md`, briefs, this file | Docs checkpoint |
+
+## Slice 9 scope (from plan)
 
 | Deliverable | Notes |
 |-------------|-------|
-| Auto title | After first user+assistant exchange; first user message ~500 char cap |
-| Rename | Nav title, chat ⋯, list leading swipe — all set `titleLocked` |
-| List swipes | Leading Rename + Export; trailing Delete already done |
-| Active row | Bronze accent bar on open conversation |
-
-**Touch points:** `ConversationListView`, `ChatThreadView`, new `TitleGenerationService.swift`
+| Device smoke | Physical iPhone 16 Pro+ preferred; simulator for UI/export/copy |
+| Light mode | System light on list, chat, settings |
+| Empty states | List empty copy; no-model banner; send disabled without model |
+| Docs | Mark MVP complete in CONTEXT/AGENTS if smoke passes |
 
 ## Post-MVP follow-up (after Slice 9)
 
 See [technical-brief.md](../technical-brief.md) § Post-MVP chat UX polish.
 
 1. **Immediate stop interrupt** — abort-callback latency beyond chunked prefill
-2. **UI state before inference** — keyboard dismiss → input clear → Stop button → input anchored bottom → blank bubble + "Generating…" → scroll to bottom → then inference
+2. **UI state before inference** — keyboard dismiss → input clear → Stop → blank bubble + "Generating…" → scroll → inference
 3. **Responsiveness during generation** — fluid UI while inference runs
-4. **Proactive trim / summarization** — reduce prefill cost on long threads (`SummarizingTrimmer` v1.1+)
+4. **Proactive trim / summarization** — `SummarizingTrimmer` v1.1+
 
 ## Resume prompt
 
 ```
 Resume Intrai-2. Read CONTEXT.md, docs/discovery/handoff-latest.md, and ~/.cursor/plans/intrai-2_mvp_plan_ce25251c.plan.md.
 
-Implement Slice 8 (auto title, rename paths, list swipes).
+Slice 8 is committed. Run Slice 9 device smoke pass and light mode check.
 ```

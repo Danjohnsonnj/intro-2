@@ -3,6 +3,7 @@ import SwiftData
 
 struct ConversationListView: View {
     @Binding var navigationPath: NavigationPath
+    @Binding var activeConversationID: UUID?
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.modelContext) private var modelContext
@@ -10,6 +11,9 @@ struct ConversationListView: View {
 
     @Query(sort: \Conversation.updatedAt, order: .reverse)
     private var conversations: [Conversation]
+
+    @State private var exportShareItem: ExportShareItem?
+    @State private var conversationToRename: Conversation?
 
     private var listRowInsets: EdgeInsets {
         EdgeInsets(
@@ -38,14 +42,30 @@ struct ConversationListView: View {
                     List {
                         ForEach(conversations) { conversation in
                             Button {
-                                navigationPath.append(conversation.id)
+                                openConversation(conversation)
                             } label: {
                                 conversationRow(conversation)
                             }
                             .buttonStyle(.plain)
                             .listRowInsets(listRowInsets)
-                            .listRowBackground(Theme.background(colorScheme))
+                            .listRowBackground(rowBackground(for: conversation))
                             .listRowSeparatorTint(Theme.border(colorScheme))
+                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                Button {
+                                    conversationToRename = conversation
+                                } label: {
+                                    Text("Rename")
+                                }
+                                .tint(Theme.surfaceRaised(colorScheme))
+
+                                Button {
+                                    exportShareItem = ConversationExport.shareItem(for: conversation)
+                                } label: {
+                                    Text("Export")
+                                }
+                                .tint(Theme.accent)
+                                .disabled(conversation.messages.isEmpty)
+                            }
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                 Button(role: .destructive) {
                                     deleteConversation(conversation)
@@ -69,6 +89,15 @@ struct ConversationListView: View {
             }
             .instrumentFlatToolbarItem()
         }
+        .sheet(item: $exportShareItem) { item in
+            ConversationShareSheet(items: [item.url])
+                .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: renameSheetIsPresented) {
+            if let conversationToRename {
+                ConversationRenameSheet(conversation: conversationToRename)
+            }
+        }
         .onAppear {
             modelStore.refreshFromManager()
         }
@@ -89,13 +118,49 @@ struct ConversationListView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    @ViewBuilder
+    private func rowBackground(for conversation: Conversation) -> some View {
+        let isActive = conversation.id == activeConversationID
+
+        ZStack(alignment: .leading) {
+            (isActive ? Theme.accentSubtle : Theme.background(colorScheme))
+
+            if isActive {
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(Theme.accent)
+                    .frame(width: 3)
+                    .padding(.vertical, 10)
+            }
+        }
+    }
+
+    private var renameSheetIsPresented: Binding<Bool> {
+        Binding(
+            get: { conversationToRename != nil },
+            set: { isPresented in
+                if !isPresented {
+                    conversationToRename = nil
+                }
+            }
+        )
+    }
+
+    private func openConversation(_ conversation: Conversation) {
+        activeConversationID = conversation.id
+        navigationPath.append(conversation.id)
+    }
+
     private func createConversation() {
         let conversation = Conversation()
         modelContext.insert(conversation)
+        activeConversationID = conversation.id
         navigationPath.append(conversation.id)
     }
 
     private func deleteConversation(_ conversation: Conversation) {
+        if activeConversationID == conversation.id {
+            activeConversationID = nil
+        }
         modelContext.delete(conversation)
     }
 
@@ -116,12 +181,16 @@ struct ConversationListView: View {
 
 #Preview {
     @Previewable @State var navigationPath = NavigationPath()
+    @Previewable @State var activeConversationID: UUID?
 
     NavigationStack(path: $navigationPath) {
-        ConversationListView(navigationPath: $navigationPath)
-            .navigationDestination(for: UUID.self) { conversationID in
-                ChatThreadView(conversationID: conversationID)
-            }
+        ConversationListView(
+            navigationPath: $navigationPath,
+            activeConversationID: $activeConversationID
+        )
+        .navigationDestination(for: UUID.self) { conversationID in
+            ChatThreadView(conversationID: conversationID)
+        }
     }
     .modelContainer(for: [Conversation.self, Message.self], inMemory: true)
     .environment(ModelStore())

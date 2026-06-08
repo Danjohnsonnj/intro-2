@@ -24,9 +24,11 @@ Private, on-device LLM chat for iPhone. Runs local models via llama.cpp + Metal.
 
 **Slice 7 complete** — MarkdownUI bubbles (coalesced stream re-parse), code block styling, per-message Copy markdown, chat ⋯ Export → `.md` share sheet (2026-06-08).
 
+**Slice 8 complete** — auto title after first exchange, rename (nav tap / ⋯ / list swipe, sets `titleLocked`), list leading Export/Rename swipes, active-row bronze accent (2026-06-08).
+
 **Design alignment** — list + settings surfaces + flat nav chrome (no Liquid Glass on +, gear, back) per canonical HTML mocks (2026-06-06).
 
-**Next session:** Implement Slice 8 (auto title, rename paths, list swipes). See `docs/discovery/handoff-latest.md`.
+**Next:** Slice 9 — device smoke pass, light mode check, MVP acceptance gate. Slice 8 pending user commit. See `docs/discovery/handoff-latest.md`.
 
 ## Docs (source of truth)
 

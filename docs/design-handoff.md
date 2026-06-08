@@ -1,7 +1,7 @@
 # Design handoff — Intrai-2
 
-**Status:** Discovery complete (signed off 2026-06-06)  
-**Last updated:** 2026-06-06
+**Status:** Discovery complete (signed off 2026-06-06). UI slices 2–8 implemented (2026-06-08).  
+**Last updated:** 2026-06-08
 
 Locked visual and UX decisions for mocks and SwiftUI implementation. Authority: this doc > HTML mocks.
 
@@ -88,17 +88,17 @@ HTML probes define **flat bronze glyphs** on an **opaque warm nav bar** — not 
 
 **Unicode symbols as tinted glyphs:** iOS may render characters like ⚙ as color emoji. Use `TextPresentationGlyph.monochrome(_:)` (appends U+FE0E) + `Text(verbatim:)` + `foregroundStyle(token)` — never raw emoji keyboard input or bare `Text("⚙")` for nav icons.
 
-## Slice design checklist (deferred UI)
+## Slice design checklist
 
-| Slice | Design items to implement per mocks |
-|-------|-------------------------------------|
-| **2** | Trailing swipe Delete (`#C94A4A`); `+` creates + pushes chat |
-| **3** | Chat nav (flat back, centered title, flat **⋯**); thread layout; compose bar |
-| **4** | Send → Stop morph (solid bronze + square stop icon) |
-| **6** | System prompt editor (`#2A2826`); inference steppers |
-| **7** | MarkdownUI bubbles; code block styling |
-| **8** | Leading Rename/Export swipes; active row bronze bar |
-| **9** | Light mode pass |
+| Slice | Design items | Status |
+|-------|----------------|--------|
+| **2** | Trailing swipe Delete (`#C94A4A`); `+` creates + pushes chat | Done |
+| **3** | Chat nav (flat back, centered title, flat **⋯**); thread layout; compose bar | Done |
+| **4** | Send → Stop morph (solid bronze + square stop icon) | Done |
+| **6** | System prompt editor (`#2A2826`); creativity slider + `n_ctx` stepper | Done |
+| **7** | MarkdownUI bubbles; code block styling | Done |
+| **8** | Leading Rename/Export swipes; active row bronze bar | Done |
+| **9** | Light mode pass | **Next** |
 
 ## Markdown in messages
 
@@ -119,7 +119,7 @@ HTML probes define **flat bronze glyphs** on an **opaque warm nav bar** — not 
 | Edge | Label | Style | Action |
 |------|-------|-------|--------|
 | Trailing | `Delete` | Destructive red | Remove conversation |
-| Leading | `Rename` | Neutral raised | Inline rename; sets `titleLocked` |
+| Leading | `Rename` | Neutral raised | Rename sheet; sets `titleLocked` |
 | Leading | `Export` | Accent bronze | Export `.md` → share sheet |
 
 - Nav title **left-aligned** "Conversations"; toolbar: flat bronze `+` then `⚙` (no Liquid Glass)
@@ -132,8 +132,9 @@ HTML probes define **flat bronze glyphs** on an **opaque warm nav bar** — not 
 - Multiline compose (~5 lines max); Return = newline
 - Send morphs to **Stop** while generating
 - Nav: back chevron; edge swipe pop to list
-- Nav title: tap to rename inline; `titleLocked` on save
-- `⋯` menu: Rename, Export
+- Nav title: tap to rename inline (`TextField` in principal toolbar); `titleLocked` on save
+- `⋯` menu: Rename (sheet), Export
+- **Active row** (list): `accentSubtle` background + 3px bronze leading bar on last-opened conversation (`activeConversationID`)
 
 ### Settings
 
@@ -177,3 +178,5 @@ Open in Safari: see `docs/archive/design-mocks/README.md`.
 | 2026-06-06 | Discovery signed off — phase complete; mocks canonical |
 | 2026-06-06 | Nav chrome: flat bronze glyphs, opt out of Liquid Glass; slice design checklist |
 | 2026-06-08 | Settings creativity slider (0.1–1.5); dropped duplicate inference status row |
+| 2026-06-08 | Slice 7 — markdown bubbles, export/copy implemented |
+| 2026-06-08 | Slice 8 — list swipes, active row, rename + auto-title implemented |

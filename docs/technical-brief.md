@@ -1,7 +1,7 @@
 # Technical brief — Intrai-2
 
-**Status:** Discovery complete (signed off 2026-06-06)  
-**Last updated:** 2026-06-06
+**Status:** Discovery complete (signed off 2026-06-06). MVP implementation Slices 0–8 shipped (2026-06-08).  
+**Last updated:** 2026-06-08
 
 ## Stack (locked)
 
@@ -154,6 +154,10 @@ Per-conversation system prompt: **v1.1+** (not in v1 schema).
 - Skip if `titleLocked`; on failure keep current title
 - **No** regenerate
 
+**Implementation (Slice 8):** `TitleGenerationService` — dedicated system prompt (3–6 word title), `GenerationOptions(maxTokens: 24, temperature: 0.3)`, output sanitized (first line, max 6 words). Triggered from `ChatViewModel` when `messages.count == 2`, title is `Conversation.defaultTitle` (`"New conversation"`), and `!titleLocked`; assistant content non-empty. Runs via `SharedLlamaInference.withSession` after chat generation completes (including stop-with-partial). No retry on later turns (message count > 2).
+
+**Rename:** `ConversationTitleEditing.applyManualRename` sets `titleLocked` on save. Surfaces: chat nav title (inline `TextField`), chat `⋯` + list leading swipe (`ConversationRenameSheet`).
+
 ## Markdown (Q13 — locked)
 
 - **Storage:** raw markdown in `Message.content` (source of truth)
@@ -162,6 +166,8 @@ Per-conversation system prompt: **v1.1+** (not in v1 schema).
 - **Copy:** per-message menu → pasteboard as plain markdown text
 - Code blocks: SF Mono + subtle background per design-handoff
 - Syntax highlighting by language tag: **not** v1
+
+**Implementation (Slice 7):** `ChatMessageMarkdown` — 16ms coalesced re-parse during stream; `ChatMarkdownTheme` (heading1–6, code blocks `#2A2826`). `ExportFormatter` + `ConversationShareSheet`; list export reuses `ConversationExport`.
 
 ## Extensibility: web search (v2+)
 
@@ -196,3 +202,6 @@ Personal / sideload / dev install. Follow iOS sandbox rules for file access.
 | 2026-06-06 | Checkpoint 2 — Q10–Q20: Phathom copy scope, SwiftData, settings, MarkdownUI, title gen, model policy |
 | 2026-06-07 | Post-MVP chat UX polish — UI state before inference (settle sequence locked), responsiveness during generation |
 | 2026-06-07 | Device UAT note — trim notice rare in practice; proactive trim/summarization deferred |
+| 2026-06-08 | Slice 6 — `SettingsStore`, creativity slider, `n_ctx` reload on save |
+| 2026-06-08 | Slice 7 — MarkdownUI bubbles, export/copy |
+| 2026-06-08 | Slice 8 — `TitleGenerationService`, rename UX, list swipes, `activeConversationID` active row |

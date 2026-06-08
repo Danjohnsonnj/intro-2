@@ -6,7 +6,7 @@ On-device iPhone chat app using llama.cpp. See [CONTEXT.md](CONTEXT.md).
 
 ## Before coding
 
-Discovery complete (2026-06-06). MVP plan approved — see `~/.cursor/plans/intrai-2_mvp_plan_ce25251c.plan.md`. **Slices 0–7 committed; next: Slice 8.** See `docs/discovery/handoff-latest.md`.
+Discovery complete (2026-06-06). MVP plan approved — see `~/.cursor/plans/intrai-2_mvp_plan_ce25251c.plan.md`. **Slices 0–8 implemented (S8 pending commit); next: Slice 9 smoke pass.** See `docs/discovery/handoff-latest.md`.
 
 ## Docs authority
 
