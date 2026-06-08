@@ -115,7 +115,8 @@ struct ConversationListView: View {
             Text(ConversationTimestampFormatter.string(for: conversation.updatedAt))
                 .listTimestampStyle(colorScheme)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
     @ViewBuilder
